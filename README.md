@@ -345,8 +345,8 @@ target_lang: zh
 
 ## 📞 联系方式 / Contact
 
-- Email: offerupup@offerupup.cn
-- Website: https://offerupup.cn
+- Email: dusiyu2004@hotmail.com
+- Website: https://offerupup.top
 - 小红书: [@乐家](https://www.xiaohongshu.com/user/profile/64f2bd6300000000060303f3)
 
 ## 🔗 相关链接 / Links
