@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <!-- 首页 -->
+    <url>
+        <loc>https://offerupup.cn/trans/</loc>
+        <priority>1.0</priority>
+    </url>
+    <!-- 文本翻译 -->
+    <url>
+        <loc>https://offerupup.cn/trans/#text</loc>
+        <priority>0.9</priority>
+    </url>
+    <!-- PDF格式翻译 -->
+    <url>
+        <loc>https://offerupup.cn/trans/#pdf</loc>
+        <priority>0.8</priority>
+    </url>
+    <!-- 图片翻译 -->
+    <url>
+        <loc>https://offerupup.cn/trans/#image</loc>
+        <priority>0.8</priority>
+    </url>
+    <!-- PPT翻译 -->
+    <url>
+        <loc>https://offerupup.cn/trans/#ppt</loc>
+        <priority>0.7</priority>
+    </url>
+    <!-- 隐私政策 -->
+    <url>
+        <loc>https://offerupup.cn/privacy</loc>
+        <priority>0.5</priority>
+    </url>
+    <!-- 联系方式 -->
+    <url>
+        <loc>mailto:offerupup@offerupup.cn</loc>
+        <priority>0.3</priority>
+    </url>
+    <!-- 小红书主页 -->
+    <url>
+        <loc>https://www.xiaohongshu.com/user/profile/64f2bd6300000000060303f3</loc>
+        <priority>0.3</priority>
+    </url>
+</urlset>

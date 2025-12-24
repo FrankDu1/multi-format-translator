@@ -1,0 +1,85 @@
+version: '3.8'
+
+services:
+  # OCR服务
+  ocr:
+    build:
+      context: ./ocr
+      dockerfile: Dockerfile
+    container_name: translator-ocr
+    ports:
+      - "29001:29001"
+    environment:
+      - PYTHONIOENCODING=utf-8
+    volumes:
+      - ./logs:/app/logs
+    restart: unless-stopped
+    networks:
+      - translator-network
+
+  # Inpaint服务
+  inpaint:
+    build:
+      context: ./inpaint
+      dockerfile: Dockerfile
+    container_name: translator-inpaint
+    ports:
+      - "29002:29002"
+    environment:
+      - PYTHONIOENCODING=utf-8
+    volumes:
+      - ./logs:/app/logs
+    restart: unless-stopped
+    networks:
+      - translator-network
+
+  # API服务
+  api:
+    build:
+      context: ./translator_api
+      dockerfile: Dockerfile
+    container_name: translator-api
+    ports:
+      - "29003:29003"
+    environment:
+      - PYTHONIOENCODING=utf-8
+      - OCR_SERVICE_URL=http://ocr:29001/ocr
+      - INPAINT_SERVICE_URL=http://inpaint:29002/inpaint
+      - FLASK_HOST=0.0.0.0
+      - FLASK_PORT=29003
+      - FLASK_DEBUG=false
+    volumes:
+      - ./translator_api/uploads:/app/uploads
+      - ./translator_api/archives:/app/archives
+      - ./logs:/app/logs
+    depends_on:
+      - ocr
+      - inpaint
+    restart: unless-stopped
+    networks:
+      - translator-network
+
+  # 前端服务
+  frontend:
+    build:
+      context: ./translator_frontend
+      dockerfile: Dockerfile
+    container_name: translator-frontend
+    ports:
+      - "5001:80"
+    environment:
+      - API_BASE_URL=http://api:29003/api
+    depends_on:
+      - api
+    restart: unless-stopped
+    networks:
+      - translator-network
+
+networks:
+  translator-network:
+    driver: bridge
+
+volumes:
+  logs:
+  uploads:
+  archives:

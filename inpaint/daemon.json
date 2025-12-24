@@ -1,0 +1,9 @@
+{
+  "registry-mirrors": [
+    "https://docker.m.daocloud.io",
+    "https://docker.nju.edu.cn",
+    "https://dockerproxy.com"
+  ],
+  "insecure-registries": [],
+  "debug": false
+}

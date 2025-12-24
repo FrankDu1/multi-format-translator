@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  translator-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: translator-api
+    ports:
+      - "29003:5001"
+    volumes:
+      - ./uploads:/app/uploads
+      - ./models_cache:/app/models_cache
+    environment:
+      # Flask 配置
+      - FLASK_HOST=0.0.0.0
+      - FLASK_PORT=5001
+      - FLASK_DEBUG=False
+      
+      # GPU 配置 - 关键参数
+      - GPU_MEMORY_LIMIT_GB=3.0           # GPU 显存限制（GB）
+      - GPU_DEVICE_ID=0                    # GPU 设备 ID
+      - USE_GPU=True                       # 是否使用 GPU
+      - GPU_MEMORY_FRACTION=0.9            # GPU 显存使用比例
+      
+      # NLLB 模型配置
+      - NLLB_MODEL_NAME=facebook/nllb-200-distilled-600M
+      - NLLB_BATCH_SIZE=8                  # 批处理大小
+      - NLLB_MAX_LENGTH=200                # 最大输出长度
+      - NLLB_NUM_BEAMS=4                   # Beam search 数量
+      - NLLB_USE_FP16=True                 # 使用 FP16 精度（节省显存）
+      
+      # 外部服务
+      - OCR_SERVICE_URL=http://47.97.97.198:29001/ocr
+      - INPAINT_SERVICE_URL=http://47.97.97.198:29002/inpaint
+      - USE_INPAINT=True
+      
+      # Hugging Face 缓存
+      - HF_HOME=/app/models_cache
+      - TRANSFORMERS_CACHE=/app/models_cache
+      - HF_HUB_CACHE=/app/models_cache
+    
+    # GPU 配置
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['0']              # 使用 GPU 0
+              capabilities: [gpu]
+        limits:
+          memory: 8G                         # 容器内存限制
+    
+    runtime: nvidia                          # 使用 NVIDIA 运行时
+    
+    restart: unless-stopped
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+networks:
+  default:
+    name: translator-network

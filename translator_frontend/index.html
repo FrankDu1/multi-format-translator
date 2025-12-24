@@ -1,0 +1,1572 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文档翻译工具 - 图片翻译、PDF翻译、PPT翻译 | 自动检测语言，保持原格式 | 乐家</title>
+    
+    <!-- SEO 优化: 新增元描述 -->
+    <meta name="description" content="强大的文档翻译工具，支持图片翻译（JPG/PNG/BMP/TIFF/WebP）、PDF翻译（保持原格式）、PPT翻译、文本翻译。自动检测语言，中英文互译，快速准确。免费使用，安全可靠。">
+
+    <!-- SEO 优化: 添加关键词 -->
+    <meta name="keywords" content="文档翻译, 图片翻译, PDF翻译, PPT翻译, Word翻译, 文本翻译, 自动语言检测, 中英文互译, 文档转换, 格式保持, 乐家翻译工具">
+
+    <!-- SEO 优化: 添加 robots 标签 -->
+    <meta name="robots" content="index, follow">
+
+    <!-- SEO 优化: 添加 canonical URL -->
+    <link rel="canonical" href="https://offerupup.cn/trans">
+
+    <!-- SEO 优化: Open Graph 标签 -->
+    <meta property="og:title" content="文档翻译工具 - 支持PDF、Word、图片、PPT在线翻译 | 乐家">
+    <meta property="og:description" content="强大的文档翻译工具，支持图片翻译、PDF翻译、PPT翻译。自动检测语言，保持原格式，快速准确。">
+    <meta property="og:image" content="https://offerupup.cn/static/images/logo.png">
+    <meta property="og:url" content="https://offerupup.cn/trans">
+    <meta property="og:type" content="website">
+
+    <!-- SEO 优化: Twitter Card 标签 -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="文档翻译工具 - 支持PDF、Word、图片、PPT在线翻译 | 乐家">
+    <meta name="twitter:description" content="强大的文档翻译工具，支持图片翻译、PDF翻译、PPT翻译。自动检测语言，保持原格式，快速准确。">
+    <meta name="twitter:image" content="https://offerupup.cn/static/images/logo.png">
+
+    <!-- SEO 优化: 结构化数据 (Schema.org WebApplication) -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "文档翻译工具",
+        "description": "强大的文档翻译工具，支持图片翻译（多种格式）、PDF翻译（保持原格式）、PPT翻译、文本翻译。自动检测语言，中英文互译，快速准确。",
+        "url": "https://offerupup.cn/trans",
+        "applicationCategory": "Utility",
+        "operatingSystem": "Web",
+        "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "CNY"
+        },
+        "creator": {
+            "@type": "Organization",
+            "name": "乐家",
+            "url": "https://offerupup.cn"
+        },
+        "featureList": [
+            "图片翻译：支持JPG、PNG、BMP、TIFF、WebP格式，自动识别文字",
+            "PDF翻译：保持原文档格式和样式，专业级翻译",
+            "PPT翻译：幻灯片翻译，支持PPTX/PPT格式",
+            "文本翻译：中英文互译，自动检测语言",
+            "多格式支持：Word、TXT文档翻译",
+            "快速准确：AI驱动，安全免费"
+        ]
+    }
+    </script>
+    
+    <!-- ❌ 删除这些 meta 标签（已经从 .env 读取了） -->
+    <!-- <meta name="env:API_BASE_URL" content="http://localhost:29003/api"> -->
+    <!-- <meta name="env:APP_ENV" content="production"> -->
+    <!-- <meta name="env:VERSION" content="3.0.0"> -->
+    <!-- <meta name="env:APP_NAME" content="Image Translator"> -->
+    
+    <link rel="stylesheet" href="/static/css/style.css?v=202510220071">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-content">
+                <div class="title-section">
+                    <div class="logo-container">
+                        <img src="/static/images/offerupup logo.png" alt="Logo" class="logo-image" onerror="this.style.display='none'">
+                        <div>
+                            <h1><i class="fas fa-language"></i> <span data-i18n="title">文档翻译工具</span></h1>
+                            <p class="subtitle" data-i18n="subtitle">支持PDF、Word、TXT文档翻译，图片翻译（多种格式，自动识别）和PPT翻译。自动检测语言，保持原格式，快速准确。</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="language-switcher">
+                    <button class="lang-btn active" id="langZh" onclick="switchLanguage('zh')">
+                        <i class="fas fa-globe"></i> <span data-i18n="chinese">中文</span>
+                    </button>
+                    <button class="lang-btn" id="langEn" onclick="switchLanguage('en')">
+                        <i class="fas fa-globe"></i> <span data-i18n="english">English</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <!-- 语言选择区域 -->
+            <div class="language-section">
+                <div class="language-card">
+                    <h3><i class="fas fa-cog"></i> <span data-i18n="translation_settings">翻译设置</span></h3>
+                    
+                    <div class="language-controls-wrapper">
+                        <!-- 语言选择 -->
+                        <div class="language-options">
+                            <div class="language-group">
+                                <label for="sourceLanguage" data-i18n="source_language">源语言:</label>
+                                <select id="sourceLanguage" class="language-select">
+                                    <option value="zh" data-i18n="chinese">中文</option>
+                                    <option value="en" data-i18n="english" selected>英文</option>
+                                    <option value="de" data-i18n="german">德语</option>
+                                </select>
+                            </div>
+
+                            <div class="arrow-icon">
+                                <i class="fas fa-arrow-right"></i>
+                            </div>
+
+                            <!-- 目标语言 -->
+                            <div class="language-group">
+                                <label for="targetLanguage" data-i18n="target_language">目标语言:</label>
+                                <select id="targetLanguage" class="language-select">
+                                    <option value="en" data-i18n="english">英文</option>
+                                    <option value="zh" data-i18n="chinese" selected>中文</option>
+                                    <option value="de" data-i18n="german">德语</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <!-- AI总结开关 -->
+                        <div class="ai-summary-option">
+                            <label class="switch-label">
+                                <input type="checkbox" id="aiSummarySwitch" class="switch-input">
+                                <span class="switch-slider"></span>
+                                <span class="switch-text">
+                                    <i class="fas fa-brain"></i> <span data-i18n="ai_summary">AI总结</span>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 🔥 新增: 通用的AI总结显示区域 (所有tab共享) -->
+                <div class="ai-summary-card" id="aiSummaryCard" style="display:none;">
+                    <!-- 总结成功显示 -->
+                    <div id="aiSummarySuccess" style="display:none;">
+                        <div class="summary-header">
+                            <h3><i class="fas fa-brain"></i> <span data-i18n="ai_summary">AI 智能总结</span></h3>
+                        </div>
+                        <div id="aiSummaryContent" class="summary-content"></div>
+                    </div>
+                    
+                    <!-- 总结失败显示 -->
+                    <div id="aiSummaryError" style="display:none;">
+                        <div class="summary-header error">
+                            <h3><i class="fas fa-exclamation-triangle"></i> <span data-i18n="ai_summary">AI 总结</span></h3>
+                        </div>
+                        <div class="summary-error-message">
+                            <i class="fas fa-info-circle"></i>
+                            <span id="aiSummaryErrorText"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 功能选择标签 - 修复所有按钮 -->
+            <div class="tab-section">
+                <div class="tab-buttons-container">
+                    <div class="tab-buttons-grid">
+                        <!-- ✅ 文本输入标签 - 已正确 -->
+                        <button id="textTabBtn" onclick="switchTab('text')" class="tab-btn-modern active">
+                            <i class="fas fa-edit"></i>
+                            <span data-i18n="text_input">文本输入</span>
+                        </button>
+                        
+                        <!-- ❌ PDF翻译标签 - 需要修复 -->
+                        <button class="tab-btn-modern" onclick="switchTab('pdf')" id="pdfTab">
+                            <i class="fas fa-file-pdf"></i>
+                            <span data-i18n="pdf_translation">PDF 翻译</span>
+                        </button>
+                        
+                        <!-- ❌ 图片翻译标签 - 需要修复 -->
+                        <button id="imageTabBtn" onclick="switchTab('image')" class="tab-btn-modern">
+                            <i class="fas fa-image"></i>
+                            <span data-i18n="image_translation">图片翻译</span>
+                        </button>
+                        
+                        <!-- ❌ PPT翻译标签 - 需要修复 -->
+                        <button id="pptTabBtn" class="tab-btn-modern" onclick="switchTab('ppt')">
+                            <i class="fas fa-file-powerpoint"></i>
+                            <span data-i18n="ppt_translation">PPT翻译</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 文本输入区域 -->
+            <div class="text-input-section" id="textInputSection">
+                <div class="text-input-area">
+                    <div class="input-header">
+                        <h3><i class="fas fa-edit"></i> <span data-i18n="input_text">输入要翻译的文本</span></h3>
+                        <div class="text-actions">
+                            <button class="btn btn-secondary btn-small" onclick="clearTextInput()">
+                                <i class="fas fa-eraser"></i> <span data-i18n="clear">清空</span>
+                            </button>
+                            <button class="btn btn-primary" id="translateTextBtn" type="button" disabled>
+                                <i class="fas fa-language"></i> <span data-i18n="start_translate">开始翻译</span>
+                            </button>
+                        </div>
+                    </div>
+                    <textarea id="textInput" class="text-input" data-i18n-placeholder="input_placeholder" placeholder="请在此处输入或粘贴要翻译的文本内容...&#10;&#10;支持中文和英文文本，系统会自动检测语言并翻译。" rows="12"></textarea>
+                    <div class="input-footer">
+                        <span class="char-count" data-i18n="char_count">字符数: <span id="charCount">0</span></span>
+                        <span class="input-hint" data-i18n="input_hint">支持自动检测语言，也可手动选择源语言和目标语言</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PDF格式翻译区域 -->
+            <div class="pdf-format-section" id="pdfFormatSection" style="display: none;">
+                <div class="pdf-upload-area">
+                    <div class="upload-area" id="pdfUploadArea">
+                        <i class="fas fa-file-pdf upload-icon"></i>
+                        <h3 data-i18n="pdf_upload_title">上传PDF文档进行格式翻译</h3>
+                        <p data-i18n="pdf_upload_subtitle">翻译后保持原文档格式和样式，专业级PDF翻译，自动检测语言。</p>
+                        <input type="file" id="pdfFileInput" accept=".pdf" style="display: none;" onchange="handlePdfFileChange(event)">
+                        <button class="btn btn-primary" onclick="document.getElementById('pdfFileInput').click()">
+                            <i class="fas fa-file-pdf"></i> <span data-i18n="select_pdf">选择PDF文件</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- PDF翻译结果区域（美观卡片风格） -->
+                <div class="pdf-download-card" id="pdfDownloadCard" style="display: none;">
+                    <div class="pdf-download-icon">
+                        <i class="fas fa-file-pdf" style="font-size: 48px; color: #d32f2f;"></i>
+                    </div>
+                    <h3 class="pdf-download-title">
+                        <i class="fas fa-check-circle text-success"></i> <span data-i18n="pdf_translation_complete">PDF翻译完成</span>
+                    </h3>
+                    <div class="pdf-download-info" id="pdfDownloadInfo"></div>
+                    <div class="pdf-download-actions">
+                        <button class="btn btn-primary" id="downloadPdfBtn">
+                            <i class="fas fa-download"></i> <span data-i18n="download_translated_pdf">下载翻译后的PDF</span>
+                        </button>
+                        <button class="btn btn-secondary" id="reselectPdfBtn">
+                            <i class="fas fa-redo"></i> <span data-i18n="retranslate">翻译新PDF</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 上传区域的按钮一行显示（示例） -->
+                <div class="pdf-upload-actions" style="display: flex; gap: 16px; margin-top: 24px;">
+                    <button class="btn btn-success" id="pdfTranslateBtn" onclick="translatePdfFile()">
+                        <i class="fas fa-language"></i> <span data-i18n="start_translate">开始翻译</span>
+                    </button>
+                    <button class="btn btn-secondary" id="clearPdfBtn" onclick="clearPdfFile()">
+                        <i class="fas fa-times"></i> <span data-i18n="reselect">重新选择</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 翻译结果显示区域（文本模式） -->
+            <div class="text-result-section" id="textResultSection" style="display: none;">
+                <div class="text-result-content">
+                    <div class="result-header">
+                        <h3><i class="fas fa-check-circle text-success"></i> <span data-i18n="translation_complete">翻译完成</span></h3>
+                        <div class="result-actions">
+                            <button class="btn btn-primary" onclick="copyToClipboard()">
+                                <i class="fas fa-copy"></i> <span data-i18n="copy_result">复制结果</span>
+                            </button>
+                            <button class="btn btn-success" onclick="downloadTextResult()">
+                                <i class="fas fa-download"></i> <span data-i18n="download_text">下载译文</span>
+                            </button>
+                            <button class="btn btn-secondary" onclick="resetTextTranslation()">
+                                <i class="fas fa-redo"></i> <span data-i18n="retranslate">重新翻译</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="text-column">
+                            <h4 data-i18n="translated_text">译文</h4>
+                            <div class="text-display" id="translatedTextDisplay"></div>
+                            <div class="text-info">
+                                <span id="translatedInfo"></span>
+                            </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 图片翻译区域 -->
+            <div class="image-translation-section" id="imageTranslationSection" style="display: none;">
+                <div class="image-upload-area">
+                    <div class="image-upload-container">
+                        <div class="image-upload-box" onclick="document.getElementById('imageFileInput').click()">
+                            <i class="fas fa-image upload-icon"></i>
+                            <h3 data-i18n="select_image">选择图片文件</h3>
+                            <p data-i18n="image_tip">支持 JPG、PNG、BMP、TIFF、WebP 格式，自动识别图片中的文字，精准翻译。</p>
+                            <input type="file" id="imageFileInput" accept=".jpg,.jpeg,.png,.bmp,.tiff,.webp" style="display: none;" onchange="handleImageFile(this)">
+                        </div>
+                        
+
+                        <div class="image-preview" id="imagePreview" style="display: none;">
+                            <img id="previewImage" src="" alt="预览图片" style="max-width: 100%; max-height: 300px; border-radius: 8px;">
+                            <div class="image-info">
+                                <span id="imageFileName"></span>
+                                <span id="imageFileSize"></span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="image-translation-controls">
+                        <button class="btn btn-primary btn-large" id="translateImageBtn" onclick="translateImage()" disabled>
+                            <i class="fas fa-language"></i> <span data-i18n="start_translate_img">开始翻译图片</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="image-result-container" id="imageResultContainer" style="display: none;">
+                    <div class="image-comparison">
+                        <div class="image-column">
+                            <h4><i class="fas fa-file-image"></i> <span data-i18n="original_image">原始图片</span></h4>
+                            <img id="originalImage" src="" alt="原始图片" style="max-width: 100%; border-radius: 8px;">
+                        </div>
+                        <div class="arrow-separator">
+                            <i class="fas fa-arrow-right"></i>
+                        </div>
+                        <div class="image-column">
+                            <h4><i class="fas fa-language"></i> <span data-i18n="translated_image">翻译后图片</span></h4>
+                            <img id="translatedImage" src="" alt="翻译后图片" style="max-width: 100%; border-radius: 8px;">
+                            <div class="image-actions">
+                                <button class="btn btn-success" onclick="downloadTranslatedImage()">
+                                    <i class="fas fa-download"></i> <span data-i18n="download_translated_image">下载翻译后图片</span>
+                                </button>
+                                <button class="btn btn-secondary" onclick="resetImageTranslation()">
+                                    <i class="fas fa-redo"></i> <span data-i18n="retranslate">翻译新图片</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PPT翻译区域 -->
+            <div class="ppt-translation-section" id="pptTranslationSection" style="display: none;">
+                <div class="ppt-upload-area">
+                    <div class="ppt-upload-container">
+                        <div class="ppt-upload-box" onclick="document.getElementById('pptFileInput').click()">
+                            <i class="fas fa-file-powerpoint upload-icon"></i>
+                            <h3 data-i18n="select_ppt">选择PPT文件</h3>
+                            <p data-i18n="ppt_support">支持 PPTX、PPT 格式</p>
+                            <input type="file" id="pptFileInput" accept=".pptx,.ppt" style="display: none;" onchange="handlePPTFile(this)">
+                        </div>
+                        
+                        <div class="ppt-preview" id="pptPreview" style="display: none;">
+                            <div class="ppt-info">
+                                <i class="fas fa-file-powerpoint" style="font-size: 48px; color: #fd7e14;"></i>
+                                <div class="ppt-details">
+                                    <span id="pptFileName"></span>
+                                    <span id="pptFileSize"></span>
+                                    <span id="pptSlideCount"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="ppt-translation-controls">
+                        <button class="btn btn-primary btn-large" id="translatePPTBtn" onclick="translatePPT()" disabled>
+                            <i class="fas fa-language"></i> <span data-i18n="start_translate_ppt">开始翻译PPT</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="ppt-result-container" id="pptResultContainer" style="display: none;">
+                    <div class="ppt-result-header">
+                        <h3><i class="fas fa-check-circle text-success"></i> <span data-i18n="ppt_translation_complete">PPT翻译完成</span></h3>
+                        <div class="ppt-result-actions">
+                            <button class="btn btn-success btn-large" onclick="downloadTranslatedPPT()">
+                                <i class="fas fa-download"></i> <span data-i18n="download_translated_ppt">下载翻译后PPT</span>
+                            </button>
+                            <button class="btn btn-secondary" onclick="resetPPTTranslation()">
+                                <i class="fas fa-redo"></i> <span data-i18n="retranslate">翻译新PPT</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="ppt-result-info">
+                        <div class="result-stats">
+                            <div class="stat-item">
+                                <i class="fas fa-file-powerpoint"></i>
+                                <span data-i18n="original_ppt_label">原始PPT</span>
+                                <strong id="originalPPTName">example.pptx</strong>
+                            </div>
+                            <div class="stat-item">
+                                <i class="fas fa-language"></i>
+                                <span data-i18n="translated_ppt_label">翻译结果</span>
+                                <strong id="translatedPPTName">translated_example.pptx</strong>
+                            </div>
+                            <div class="stat-item">
+                                <i class="fas fa-chart-bar"></i>
+                                <span data-i18n="ppt_translation_stats_label">翻译统计</span>
+                                <strong id="pptTranslationStats">0/0 项完成</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 进度显示区域 -->
+            <div class="progress-section" id="progressSection" style="display: none;">
+                <div class="progress-card">
+                    <h3><i class="fas fa-cog fa-spin"></i> <span data-i18n="translating_progress">翻译进行中...</span></h3>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <p id="progressText" data-i18n="processing">正在处理文档...</p>
+                </div>
+            </div>
+
+            <!-- 结果显示区域 -->
+            <div class="result-section" id="resultSection" style="display: none;">
+                <div class="result-header">
+                    <h3><i class="fas fa-check-circle text-success"></i> <span data-i18n="translation_complete">翻译完成</span></h3>
+                    <div class="result-actions">
+                        <button class="btn btn-primary" id="downloadBtn">
+                            <i class="fas fa-download"></i> <span data-i18n="download_file">下载翻译文件</span>
+                        </button>
+                        <button class="btn btn-secondary" onclick="resetApp()">
+                            <i class="fas fa-redo"></i> <span data-i18n="translate_new">翻译新文档</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="result-content">
+                    <div class="text-preview">
+                        <h4 data-i18n="translation_preview">翻译预览：</h4>
+                        <div class="text-box" id="translatedText"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 错误提示区域 -->
+            <div class="error-section" id="errorSection" style="display: none;">
+                <div class="error-card">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <h3 data-i18n="processing_failed">处理失败</h3>
+                    <p id="errorMessage"></p>
+                    <button class="btn btn-secondary" onclick="resetApp()">
+                        <i class="fas fa-redo"></i> <span data-i18n="restart">重新开始</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- PDF下载结果区域 -->
+            <div class="pdf-download-container" id="pdfDownloadContainer" style="display: none;">
+                <div class="pdf-download-header">
+                    <h3><i class="fas fa-check-circle text-success"></i> <span data-i18n="pdf_translation_complete">PDF翻译完成</span></h3>
+                     <p id="pdfDownloadInfo"></p>
+                     <button class="btn btn-primary" id="downloadPdfBtn">
+                         <i class="fas fa-download"></i> <span data-i18n="download_translated_pdf">下载翻译后的PDF</span>
+                     </button>
+                    <button class="btn btn-secondary" onclick="resetPdfTranslation()">
+                        <i class="fas fa-redo"></i> <span data-i18n="retranslate">翻译新PDF</span>
+                    </button>
+                 </div>
+             </div>
+
+            <!-- AI 总结区域（默认隐藏） -->
+            <div id="aiSummarySection" style="display:none">
+                <h3 data-i18n="ai_summary">AI 总结</h3>
+                <div id="aiSummaryContent"></div>
+            </div>
+        </div>
+        
+        <!-- 🔥 更新footer内容，与主页一致 -->
+        <footer class="footer">
+            <div class="footer-content">
+                <div class="footer-links">
+                    <a href="https://beian.miit.gov.cn/" target="_blank" rel="nofollow">京ICP备2025108783号</a>
+                    <span class="separator">|</span>
+                    <a href="mailto:offerupup@offerupup.cn">联系方式：offerupup@offerupup.cn</a>
+                    <span class="separator">|</span>
+                    <span>© 2025 乐家</span>
+                    <span class="separator">|</span>
+                    <a href="https://offerupup.cn/privacy" target="_blank">隐私政策</a>
+                    <span class="separator">|</span>
+                    <a href="https://www.xiaohongshu.com/user/profile/64f2bd6300000000060303f3" target="_blank" rel="nofollow">小红书</a>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- 🔥 删除或注释掉这一行，因为函数已经在下面定义了 -->
+    <!-- <script src="/static/js/tabs.js?v=20251022001"></script> -->
+    
+    <!-- ✅ 新增：在加载其他JS之前定义 ENV_CONFIG -->
+    <script>
+        window.ENV_CONFIG = {
+            API_BASE_URL: (() => {
+                const hostname = window.location.hostname;
+                if (hostname === 'localhost' || hostname === '127.0.0.1') {
+                    return 'http://localhost:29003/api';
+                } else {
+                    return 'https://offerupup.cn/translator-api/api';
+                }
+            })(),
+            
+            APP_ENV: window.location.hostname === 'localhost' ? 'development' : 'production',
+            VERSION: '3.0.0',
+            APP_NAME: 'Image Translator',
+            
+            getApiUrl() {
+                return this.API_BASE_URL;
+            },
+            
+            getEnv() {
+                return this.APP_ENV;
+            },
+            
+            getVersion() {
+                return this.VERSION;
+            }
+        };
+        
+        console.log('✅ ENV_CONFIG 已定义:', window.ENV_CONFIG.API_BASE_URL);
+    </script>
+
+    <script src="/static/js/env-config.js?v=20251016"></script>
+    <script src="/static/js/i18n.js?v=20251224001"></script>
+    <script src="/static/js/app.js?v=20250922"></script>
+    
+    <script>
+        // ==========================================
+        // 🔥 语言选择器联动逻辑
+        // ==========================================
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🚀 页面初始化...');
+            
+            // 1. 切换到文本翻译标签
+            switchTab('text');
+            
+            // 2. 绑定文本输入事件监听器
+            const textInput = document.getElementById('textInput');
+            const translateTextBtn = document.getElementById('translateTextBtn');
+            const charCount = document.getElementById('charCount');
+            
+            if (textInput && translateTextBtn) {
+                textInput.addEventListener('input', function() {
+                    const text = this.value.trim();
+                    const hasText = text.length > 0;
+                    translateTextBtn.disabled = !hasText;
+                    if (charCount) {
+                        charCount.textContent = text.length;
+                    }
+                });
+                
+                console.log('✅ 文本输入监听器已绑定');
+                const initialText = textInput.value.trim();
+                translateTextBtn.disabled = initialText.length === 0;
+            } else {
+                console.error('❌ 元素未找到!');
+            }
+            
+            // 🔥 3. 绑定语言选择器联动逻辑
+            const sourceLanguageSelect = document.getElementById('sourceLanguage');
+            const targetLanguageSelect = document.getElementById('targetLanguage');
+            
+            if (sourceLanguageSelect && targetLanguageSelect) {
+                // 获取所有可用语言选项
+                const getAvailableLanguages = (excludeValue) => {
+                    const allOptions = Array.from(targetLanguageSelect.options);
+                    return allOptions
+                        .map(opt => opt.value)
+                        .filter(val => val !== excludeValue);
+                };
+                
+                // 随机选择一个语言（排除当前选中的）
+                const selectRandomLanguage = (selectElement, excludeValue) => {
+                    const availableLanguages = getAvailableLanguages(excludeValue);
+                    if (availableLanguages.length > 0) {
+                        const randomLang = availableLanguages[Math.floor(Math.random() * availableLanguages.length)];
+                        selectElement.value = randomLang;
+                        console.log(`🔄 自动切换语言为: ${randomLang}`);
+                    }
+                };
+                
+                // 监听源语言变化
+                sourceLanguageSelect.addEventListener('change', function() {
+                    const selectedSource = this.value;
+                    console.log(`📝 用户选择源语言: ${selectedSource}`);
+                    
+                    // 如果目标语言和源语言相同，自动切换目标语言
+                    if (targetLanguageSelect.value === selectedSource) {
+                        selectRandomLanguage(targetLanguageSelect, selectedSource);
+                    }
+                });
+                
+                // 监听目标语言变化
+                targetLanguageSelect.addEventListener('change', function() {
+                    const selectedTarget = this.value;
+                    console.log(`📝 用户选择目标语言: ${selectedTarget}`);
+                    
+                    // 如果源语言和目标语言相同，自动切换源语言
+                    if (sourceLanguageSelect.value === selectedTarget) {
+                        selectRandomLanguage(sourceLanguageSelect, selectedTarget);
+                    }
+                });
+                
+                console.log('✅ 语言选择器联动逻辑已绑定');
+            } else {
+                console.error('❌ 语言选择器未找到!');
+            }
+        });
+        
+        // ==========================================
+        // switchTab 函数
+        // ==========================================
+        function switchTab(tabName) {
+            // ❌ 可选：移除切换标签的日志
+            // console.log('切换到标签:', tabName);
+            
+            // 移除所有active
+            document.querySelectorAll('.tab-btn-modern').forEach(t => t.classList.remove('active'));
+            
+            // 激活当前tab（只对未禁用的按钮）
+            const btn = document.getElementById(tabName + 'TabBtn');
+            if (btn && !btn.disabled) {
+                btn.classList.add('active');
+            }
+            
+            // 隐藏所有section
+            ['textInputSection', 'pdfFormatSection', 'imageTranslationSection', 'pptTranslationSection']
+                .forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.style.display = 'none';
+                });
+            
+            // 显示目标section
+            const map = {
+                text: 'textInputSection', 
+                pdf: 'pdfFormatSection', 
+                image: 'imageTranslationSection', 
+                ppt: 'pptTranslationSection'
+            };
+            const target = document.getElementById(map[tabName]);
+            if (target) target.style.display = 'block';
+        }
+        
+        // 清空文本输入
+        function clearTextInput() {
+            const textInput = document.getElementById('textInput');
+            const translateTextBtn = document.getElementById('translateTextBtn');
+            const charCount = document.getElementById('charCount');
+            
+            if (textInput) textInput.value = '';
+            if (translateTextBtn) translateTextBtn.disabled = true;
+            if (charCount) charCount.textContent = '0';
+            
+            // ✅ 保留清空操作的日志（不频繁）
+            console.log('✅ 文本已清空');
+        }
+        
+        // 调试检查函数
+        function runDebugCheck() {
+            const resultSpan = document.getElementById('debugResult');
+            let results = [];
+            
+            // 检查所有标签按钮
+            const allButtons = document.querySelectorAll('.tab-btn');
+            results.push(`旧按钮数: ${allButtons.length}`);
+            
+            const newButtons = document.querySelectorAll('[id$="TabBtn"]');
+            results.push(`新按钮数: ${newButtons.length}`);
+            
+            // 检查每个按钮的状态
+            allButtons.forEach((btn, index) => {
+                const styles = window.getComputedStyle(btn);
+                const id = btn.id || `button-${index + 1}`;
+                const text = btn.textContent.trim().substring(0, 10);
+                results.push(`${id}(${text}): display=${styles.display}, visible=${styles.visibility}`);
+            });
+            
+            // 检查PDF相关元素
+            const pdfTab = document.getElementById('pdfTab');
+            if (pdfTab) {
+                const pdfStyles = window.getComputedStyle(pdfTab);
+                results.push(`PDF标签: 存在, display=${pdfStyles.display}`);
+            } else {
+                results.push('PDF标签: 不存在！');
+            }
+            
+            const pdfSection = document.getElementById('pdfFormatSection');
+            if (pdfSection) {
+                results.push('PDF区域: 存在');
+            } else {
+                results.push('PDF区域: 不存在！');
+            }
+            
+            // 检查容器
+            const tabButtons = document.querySelector('.tab-buttons');
+            if (tabButtons) {
+                const containerStyles = window.getComputedStyle(tabButtons);
+                results.push(`容器: display=${containerStyles.display}, width=${containerStyles.width}`);
+            }
+            
+            resultSpan.innerHTML = results.join('<br>');
+            resultSpan.style.background = 'rgba(255,255,255,0.2)';
+            resultSpan.style.padding = '10px';
+            resultSpan.style.borderRadius = '5px';
+            resultSpan.style.marginTop = '10px';
+            resultSpan.style.display = 'inline-block';
+        }
+        
+        // PDF翻译调试函数
+        function debugPdfTranslate() {
+            console.log('=== PDF翻译调试 ===');
+            console.log('currentPdfFile:', window.currentPdfFile);
+            console.log('pdfFileInput存在:', document.getElementById('pdfFileInput') !== null);
+            console.log('pdfFileName存在:', document.getElementById('pdfFileName') !== null);
+            console.log('pdfFileInfo显示状态:', document.getElementById('pdfFileInfo')?.style.display);
+            
+            const sourceLanguage = document.getElementById('sourceLanguage')?.value;
+            const targetLanguage = document.getElementById('targetLanguage')?.value;
+            console.log('源语言:', sourceLanguage);
+            console.log('目标语言:', targetLanguage);
+            
+            // 检查是否有文件
+            if (!window.currentPdfFile) {
+                alert('调试信息：没有选择PDF文件！请先选择一个PDF文件。');
+                return;
+            }
+            
+            alert(`调试信息：
+文件名: ${window.currentPdfFile.name}
+文件大小: ${(window.currentPdfFile.size / 1024 / 1024).toFixed(2)} MB
+文件类型: ${window.currentPdfFile.type}
+源语言: ${sourceLanguage}
+目标语言: ${targetLanguage}
+
+点击确定后将开始翻译...`);
+            
+            // 调用实际的翻译函数
+            if (window.translatePdfFile) {
+                window.translatePdfFile();
+            } else {
+                alert('错误：translatePdfFile函数不存在！');
+            }
+        }
+        
+        // PDF文件选择处理函数
+        window.currentPdfFile = null;
+        
+        function handlePdfFileChange(event) {
+            console.log('PDF文件选择事件触发');
+            const file = event.target.files[0];
+            
+            if (!file) {
+                console.log('没有选择文件');
+                return;
+            }
+            
+            console.log('选择的文件:', file.name, file.type, file.size);
+            
+            if (file.type !== 'application/pdf') {
+                alert('请选择PDF文件！');
+                return;
+            }
+            
+            // 设置全局变量
+            window.currentPdfFile = file;
+            
+            // 显示文件信息
+            const pdfFileName = document.getElementById('pdfFileName');
+            const pdfFileInfo = document.getElementById('pdfFileInfo');
+            const pdfUploadArea = document.getElementById('pdfUploadArea');
+            
+            if (pdfFileName) {
+                pdfFileName.textContent = file.name;
+                console.log('文件名已设置:', file.name);
+            }
+            
+            if (pdfFileInfo) {
+                pdfFileInfo.style.display = 'block';
+                console.log('文件信息区域已显示');
+            }
+            
+            if (pdfUploadArea) {
+                pdfUploadArea.style.display = 'none';
+                console.log('上传区域已隐藏');
+            }
+            
+            // 启用翻译按钮
+            const translateBtn = document.getElementById('pdfTranslateBtn2');
+            if (translateBtn) {
+                translateBtn.disabled = false;
+                console.log('翻译按钮已启用');
+            }
+            
+            console.log('PDF文件处理完成，currentPdfFile已设置');
+        }
+        
+        // 清除PDF文件函数
+        function clearPdfFile() {
+            window.currentPdfFile = null;
+            
+            const pdfFileInput = document.getElementById('pdfFileInput');
+            const pdfFileInfo = document.getElementById('pdfFileInfo');
+            const pdfUploadArea = document.getElementById('pdfUploadArea');
+            
+            if (pdfFileInput) pdfFileInput.value = '';
+            if (pdfFileInfo) pdfFileInfo.style.display = 'none';
+            if (pdfUploadArea) pdfUploadArea.style.display = 'block';
+            
+            console.log('PDF文件已清除');
+        }
+        
+        // 简化的PDF翻译函数
+        async function translatePdfFile() {
+            if (!currentPdfFile) {
+                alert('请先选择PDF文件');
+                return;
+            }
+            
+            try {
+                console.log('开始PDF翻译...');
+                
+                // 显示进度
+                const progressSection = document.getElementById('progressSection');
+                if (progressSection) {
+                    progressSection.style.display = 'block';
+                    document.getElementById('progressText').textContent = '正在翻译PDF...';
+                }
+                
+                // 准备表单数据
+                const formData = new FormData();
+                formData.append('file', currentPdfFile);
+                
+                // 🔥 使用通用语言选择器
+                const sourceLang = document.getElementById('sourceLanguage')?.value;
+                const targetLang = document.getElementById('targetLanguage')?.value;
+                // 获取AI总结开关状态
+                const aiSummarySwitch = document.getElementById('aiSummarySwitch');
+                const enableSummary = aiSummarySwitch ? aiSummarySwitch.checked : false;
+                
+                // 转换语言代码
+                const langMap = {
+                    '中文': 'zh',
+                    '英文': 'en',
+                    'auto': 'auto',
+                    'zh': 'zh',
+                    'en': 'en'
+                };
+                
+                const srcLangCode = langMap[sourceLang] || sourceLang || 'auto';
+                const tgtLangCode = langMap[targetLang] || targetLang || 'zh';
+                
+                // 🔥 修复：使用正确的参数名
+                formData.append('source_lang', srcLangCode);  // ✅ 改为 source_lang
+                formData.append('target_lang', tgtLangCode);  // ✅ 改为 target_lang
+                formData.append('enable_summary', enableSummary); 
+
+                console.log('🌐 PDF翻译语言设置:', { 
+                    源语言: sourceLang,
+                    目标语言: targetLanguage,
+                    source_lang: srcLangCode, 
+                    target_lang: tgtLangCode 
+                });
+                
+                // 🔍 调试：打印FormData内容
+                console.log('📦 PDF FormData 内容:');
+                for (let pair of formData.entries()) {
+                    console.log(`   ${pair[0]}: ${pair[1]}`);
+                }
+                
+                // 🔥 使用 ENV_CONFIG 获取 API 地址
+                const apiBaseUrl = window.ENV_CONFIG.getApiUrl();
+                const fullUrl = `${apiBaseUrl}/translate/pdf`;  // ✅ 调用 /translate/pdf
+                console.log('🌐 PDF完整请求URL:', fullUrl);
+                
+                // 发送翻译请求
+                const response = await fetch(fullUrl, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                console.log('📥 收到PDF响应，状态码:', response.status);
+                
+                const result = await response.json();
+                console.log('✅ PDF翻译结果:', result);
+                
+                if (result.success) {
+                    showPdfDownloadResult(result); // ✅ 改为调用下载结果显示
+                    if (result.summary) {
+                        displayAISummary(result.summary);
+                    } else {
+                        hideAISummary();
+                    }
+                } else {
+                    throw new Error(result.error || 'PDF翻译失败');
+                }
+                
+            } catch (error) {
+                console.error('❌ PDF翻译失败:', error);
+                alert('翻译失败: ' + error.message);
+            } finally {
+                const progressSection = document.getElementById('progressSection');
+                if (progressSection) {
+                    progressSection.style.display = 'none';
+                }
+            }
+        }
+
+        // PDF下载结果显示（完善版）
+        function showPdfDownloadResult(result) {
+            console.log('📊 显示PDF翻译结果，完整result对象:', result);
+            
+            const card = document.getElementById('pdfDownloadCard');
+            const info = document.getElementById('pdfDownloadInfo');
+            const downloadBtn = document.getElementById('downloadPdfBtn');
+            const reselectBtn = document.getElementById('reselectPdfBtn');
+            
+            if (!card) {
+                console.error('❌ 找不到 pdfDownloadCard 元素');
+                return;
+            }
+            
+            // 🔥 获取下载 URL（与 PPT 逻辑一致）
+            let pdfUrl = result.download_url || 
+                         result.file_url ||
+                         result.url ||
+                         result.translated_filename ||
+                         result.filename;
+            
+            console.log('🔍 提取到的原始URL:', pdfUrl);
+            
+            // 🔥 统一 URL 拼接逻辑
+            if (pdfUrl) {
+                if (pdfUrl.startsWith('http://') || pdfUrl.startsWith('https://')) {
+                    // 检查是否需要添加 translator-api 前缀
+                    if (pdfUrl.includes('offerupup.cn') && !pdfUrl.includes('translator-api')) {
+                        pdfUrl = pdfUrl.replace('/api/files/', '/translator-api/api/files/');
+                        console.log('🔧 修正后的URL:', pdfUrl);
+                    }
+                } else {
+                    // 拼接完整 URL
+                    const apiBaseUrl = window.ENV_CONFIG.getApiUrl();
+                    if (!pdfUrl.includes('/')) {
+                        pdfUrl = `${apiBaseUrl}/files/${pdfUrl}`;
+                    } else {
+                        const host = apiBaseUrl.replace(/\/api\/?$/, '');
+                        pdfUrl = host + (pdfUrl.startsWith('/') ? pdfUrl : '/' + pdfUrl);
+                    }
+                    console.log('🔗 拼接后的完整URL:', pdfUrl);
+                }
+            }
+            
+            // 保存到全局变量
+            window.translatedPDFUrl = pdfUrl;
+            window.translatedPDFFilename = result.filename || 'translated.pdf';
+            
+            console.log('💾 已保存到全局变量:');
+            console.log('   window.translatedPDFUrl:', window.translatedPDFUrl);
+            console.log('   window.translatedPDFFilename:', window.translatedPDFFilename);
+            
+            // 更新信息显示
+            if (info) {
+                const infoText = `文件名：${result.filename || '未知'}` +
+                                `${result.processing_time ? `，处理时间：${result.processing_time}` : ''}` +
+                                `${result.source_lang ? `，源语言：${result.source_lang}` : ''}` +
+                                `${result.target_lang ? `，目标语言：${result.target_lang}` : ''}`;
+                info.textContent = infoText;
+            }
+            
+            // 下载按钮
+            if (downloadBtn) {
+                downloadBtn.onclick = function() {
+                    console.log('📥 开始下载PDF:', window.translatedPDFUrl);
+                    
+                    fetch(window.translatedPDFUrl)
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                            }
+                            return response.blob();
+                        })
+                        .then(blob => {
+                            const url = URL.createObjectURL(blob);
+                            const link = document.createElement('a');
+                            link.href = url;
+                            link.download = window.translatedPDFFilename;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                            URL.revokeObjectURL(url);
+                            console.log('✅ PDF下载成功');
+                        })
+                        .catch(error => {
+                            console.error('❌ PDF下载失败:', error);
+                            alert('下载失败: ' + error.message + '\n请检查网络连接或联系管理员');
+                        });
+                };
+            }
+            
+            // 重新选择按钮
+            if (reselectBtn) {
+                reselectBtn.onclick = function() {
+                    card.style.display = 'none';
+                    clearPdfFile();
+                    
+                    // 显示上传区域
+                    const uploadArea = document.getElementById('pdfUploadArea');
+                    if (uploadArea) uploadArea.style.display = 'block';
+                    
+                    console.log('✅ 已重置PDF翻译');
+                };
+            }
+            
+            // 显示结果卡片，隐藏上传区域
+            card.style.display = 'block';
+            
+            const uploadArea = document.getElementById('pdfUploadArea');
+            const fileInfo = document.getElementById('pdfFileInfo');
+            if (uploadArea) uploadArea.style.display = 'none';
+            if (fileInfo) fileInfo.style.display = 'none';
+            
+            console.log('✅ PDF翻译结果显示完成');
+        }
+
+        // 图片翻译相关函数
+        let currentImageFile = null;
+        
+        // 处理图片文件选择
+        function handleImageFile(input) {
+            const file = input.files[0];
+            if (!file) return;
+            
+            currentImageFile = file;
+            
+            // 显示预览
+            const preview = document.getElementById('imagePreview');
+            const previewImage = document.getElementById('previewImage');
+            const fileName = document.getElementById('imageFileName');
+            const fileSize = document.getElementById('imageFileSize');
+            
+            previewImage.src = URL.createObjectURL(file);
+            fileName.textContent = file.name;
+            fileSize.textContent = formatFileSize(file.size);
+            preview.style.display = 'block';
+            
+            // 更新翻译按钮状态
+            updateTranslateButtonState();
+        }
+        
+        // 更新翻译按钮状态
+        function updateTranslateButtonState() {
+            const translateBtn = document.getElementById('translateImageBtn');
+            // 只要有图片文件就可以翻译
+            translateBtn.disabled = !currentImageFile;
+        }
+        
+        // 格式化文件大小
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+        
+        // 翻译图片
+        async function translateImage() {
+            if (!currentImageFile) {
+                alert('请先选择图片文件');
+                return;
+            }
+            
+            try {
+                console.log('开始图片翻译...');
+                hideAISummary();
+                // 显示进度
+                const progressSection = document.getElementById('progressSection');
+                if (progressSection) {
+                    progressSection.style.display = 'block';
+                    document.getElementById('progressText').textContent = '正在翻译图片...';
+                }
+                
+                // 准备表单数据
+                const formData = new FormData();
+                formData.append('file', currentImageFile);
+                
+                // 🔥 使用通用语言选择器
+                const sourceLang = document.getElementById('sourceLanguage')?.value;
+                const targetLang = document.getElementById('targetLanguage')?.value;
+                
+                // 获取AI总结开关状态
+                const aiSummarySwitch = document.getElementById('aiSummarySwitch');
+                const enableSummary = aiSummarySwitch ? aiSummarySwitch.checked : false;
+                
+                // 转换语言代码
+                const langMap = {
+                    '中文': 'zh',
+                    '英文': 'en',
+                    'auto': 'auto',
+                    'zh': 'zh',
+                    'en': 'en'
+                };
+                
+                const srcLangCode = langMap[sourceLang] || sourceLang || 'auto';
+                const tgtLangCode = langMap[targetLang] || targetLang || 'zh';
+                
+                // 🔥 修复：使用正确的参数名
+                formData.append('source_lang', srcLangCode);  // ✅ 改为 source_lang
+                formData.append('target_lang', tgtLangCode);  // ✅ 改为 target_lang
+                formData.append('enable_summary', enableSummary);
+
+                console.log('🌐 翻译语言设置:', { 
+                    源语言: sourceLang,
+                    目标语言: targetLang,
+                    source_lang: srcLangCode, 
+                    target_lang: tgtLangCode,
+                    AI总结: enableSummary ? '✓ 启用' : '✗ 禁用'
+                });
+                
+                // 🔍 调试：打印FormData内容
+                console.log('📦 FormData 内容:');
+                for (let pair of formData.entries()) {
+                    console.log(`   ${pair[0]}: ${pair[1]}`);
+                }
+                
+                // 获取API地址
+                // const apiBaseUrl = document.querySelector('meta[name="env:API_BASE_URL"]')?.content || 'https://chat.offerupup.cn/translator-api/api';
+                // const fullUrl = `${apiBaseUrl}/translate/image`;
+                // console.log('🌐 完整请求URL:', fullUrl);
+                
+                // 🔥 使用 ENV_CONFIG 获取 API 地址
+                const apiBaseUrl = window.ENV_CONFIG.getApiUrl();
+                const fullUrl = `${apiBaseUrl}/translate/image`;
+                console.log('🌐 完整请求URL:', fullUrl);
+                
+                // 发送翻译请求
+                const response = await fetch(fullUrl, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                console.log('📥 收到响应，状态码:', response.status);
+                
+                const result = await response.json();
+                console.log('✅ 图片翻译结果:', result);
+                
+                if (result.success) {
+                    showImageTranslationResult(result);
+                    
+                    // 🔥 新增: 显示AI总结
+                    if (result.summary) {
+                        displayAISummary(result.summary);
+                    } else {
+                        hideAISummary();
+                    }
+                } 
+                if (!response.ok || !result.success) {
+                    if (result.code === 'NO_TEXT_DETECTED') {
+                        // 特殊提示
+                        alert(`⚠️ ${result.message || '未检测到需要翻译的文本'}\n\n可能原因：\n• 图片中没有文字\n• 源语言选择不匹配\n• 图片质量过低\n\n建议：\n- 检查图片内容\n- 尝试更换源语言\n- 使用更清晰的图片`);
+                    } else {
+                        alert(`翻译失败：${result.message || result.error}`);
+                    }
+                    throw new Error(result.message || result.error);
+                }
+                
+            } catch (error) {
+                console.error('❌ 图片翻译失败:', error);
+                hideAISummary();
+            } finally {
+                const progressSection = document.getElementById('progressSection');
+                if (progressSection) {
+                    progressSection.style.display = 'none';
+                }
+            }
+        }
+        
+        // 显示图片翻译结果
+        function showImageTranslationResult(result) {
+            console.log('🔍 显示翻译结果，完整result对象:', result);
+            
+            const resultContainer = document.getElementById('imageResultContainer');
+            if (!resultContainer) return;
+            
+            const originalImage = document.getElementById('originalImage');
+            const translatedImage = document.getElementById('translatedImage');
+            
+            // 设置原始图片
+            if (originalImage) {
+                originalImage.src = URL.createObjectURL(currentImageFile);
+            }
+            
+            // 🔥 修复：添加 translated_filename 字段
+            const imageUrl = result.translated_filename ||  // ⭐ 新增这个字段
+                           result.translated_image || 
+                           result.output_image || 
+                           result.download_url || 
+                           result.file_url ||
+                           result.url ||
+                           result.image_url;
+            
+            console.log('🔍 提取到的imageUrl:', imageUrl);
+            console.log('🔍 result中的所有字段:', Object.keys(result));
+            
+            // 设置翻译后的图片
+            if (translatedImage && imageUrl) {
+                let finalUrl;
+                
+                // 如果已经是完整URL，直接使用
+                if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+                    finalUrl = imageUrl;
+                    console.log('✅ 使用完整URL:', finalUrl);
+                } else {
+                    // 否则拼接API地址
+                    const apiBaseUrl = window.ENV_CONFIG.getApiUrl();
+                    finalUrl = `${apiBaseUrl}/files/${imageUrl}`;
+                    console.log('✅ 拼接后的URL:', finalUrl);
+                }
+                
+                translatedImage.src = finalUrl;
+                translatedImage.onerror = function() {
+                    console.error('❌ 翻译图片加载失败!');
+                    console.error('   - URL:', finalUrl);
+                    console.error('   - 完整URL:', this.src);
+                };
+                translatedImage.onload = function() {
+                    console.log('✅ 翻译图片加载成功!');
+                };
+            } else {
+                console.error('❌ 无法获取翻译后的图片URL');
+                alert('后端返回的数据中没有图片URL');
+            }
+            
+            // 保存下载信息
+            window.translatedImageUrl = imageUrl;
+            window.translatedImageFilename = result.translated_filename || result.filename || 'translated_image.jpg';
+            
+            console.log('💾 保存的下载信息:', {
+                url: window.translatedImageUrl,
+                filename: window.translatedImageFilename
+            });
+            
+            // 显示结果区域
+            resultContainer.style.display = 'block';
+        }
+        
+        // 下载翻译后的图片
+        function downloadTranslatedImage() {
+            if (!window.translatedImageUrl) {
+                alert('没有可下载的翻译图片');
+                return;
+            }
+            
+            // 🔥 使用 fetch 下载，确保URL正确
+            const downloadUrl = document.getElementById('translatedImage').src;  // ← 直接用img标签的src
+            
+            fetch(downloadUrl)
+                .then(response => response.blob())
+                .then(blob => {
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = window.translatedImageFilename || 'translated_image.png';
+                    link.click();
+                    URL.revokeObjectURL(url);
+                })
+                .catch(error => {
+                    console.error('下载失败:', error);
+                    alert('下载失败，请右键图片选择"图片另存为"');
+                });
+        }
+        
+        // 重置图片翻译
+        function resetImageTranslation() {
+            currentImageFile = null;
+            
+            // 重置文件选择
+            document.getElementById('imageFileInput').value = '';
+            document.getElementById('imagePreview').style.display = 'none';
+            document.getElementById('translateImageBtn').disabled = true;
+            
+            // 隐藏结果
+            document.getElementById('imageResultContainer').style.display = 'none';
+            
+            // 清理URL
+            if (window.translatedImageUrl) {
+                URL.revokeObjectURL(window.translatedImageUrl);
+                window.translatedImageUrl = null;
+                window.translatedImageFilename = null;
+            }
+        }
+
+        // PPT翻译相关函数
+        let currentPPTFile = null;
+
+        // 处理PPT文件选择
+        function handlePPTFile(input) {
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                
+                // 验证文件类型
+                if (!file.name.toLowerCase().endsWith('.ppt') && !file.name.toLowerCase().endsWith('.pptx')) {
+                    alert('请选择 PPT 或 PPTX 格式的文件！');
+                    input.value = '';
+                    return;
+                }
+                
+                currentPPTFile = file;
+                
+                // 显示PPT预览信息
+                const preview = document.getElementById('pptPreview');
+                const fileName = document.getElementById('pptFileName');
+                const fileSize = document.getElementById('pptFileSize');
+                const slideCount = document.getElementById('pptSlideCount');
+                
+                fileName.textContent = file.name;
+                fileSize.textContent = formatFileSize(file.size);
+                slideCount.textContent = '等待翻译...';
+                
+                preview.style.display = 'block';
+                
+                // 启用翻译按钮
+                document.getElementById('translatePPTBtn').disabled = false;
+                
+                console.log('✅ PPT文件已选择:', file.name);
+            }
+        }
+
+        // PPT翻译函数
+        async function translatePPT() {
+            if (!currentPPTFile) {
+                alert('请先选择PPT文件');
+                return;
+            }
+
+            try {
+                console.log('🚀 开始PPT翻译...');
+                
+                // 显示进度
+                const progressSection = document.getElementById('progressSection');
+                if (progressSection) {
+                    progressSection.style.display = 'block';
+                    document.getElementById('progressText').textContent = '正在翻译PPT，请稍候...';
+                }
+                
+                const translateBtn = document.getElementById('translatePPTBtn');
+                translateBtn.disabled = true;
+                translateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 翻译中...';
+                
+                // 创建FormData
+                const formData = new FormData();
+                formData.append('file', currentPPTFile);
+                
+                // 获取语言参数
+                const sourceLang = document.getElementById('sourceLanguage')?.value || 'en';
+                const targetLang = document.getElementById('targetLanguage')?.value || 'zh';
+                // 获取AI总结开关状态
+                const aiSummarySwitch = document.getElementById('aiSummarySwitch');
+                const enableSummary = aiSummarySwitch ? aiSummarySwitch.checked : false;
+                
+                formData.append('source_lang', sourceLang);
+                formData.append('target_lang', targetLang);
+                formData.append('enable_summary', enableSummary);
+                formData.append('simple', 'false');  // 完整模式
+        
+                console.log('📊 PPT翻译参数:', {
+                    文件名: currentPPTFile.name,
+                    源语言: sourceLang,
+                    目标语言: targetLang
+                });
+                
+                // 调用API
+                const apiBaseUrl = window.ENV_CONFIG.getApiUrl();
+                const fullUrl = `${apiBaseUrl}/translate/ppt`;
+                console.log('🌐 PPT请求URL:', fullUrl);
+                
+                const response = await fetch(fullUrl, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                console.log('📥 收到PPT响应，状态码:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                console.log('✅ PPT翻译结果:', result);
+                console.log('   - success:', result.success);
+                console.log('   - download_url:', result.download_url);
+                console.log('   - filename:', result.filename);
+
+                if (result.success) {
+                    showPPTTranslationResult(result);
+                    // 🔥 新增: 显示AI总结
+                    if (result.summary) {
+                        displayAISummary(result.summary);
+                    } else {
+                        hideAISummary();
+                    }
+                } else {
+                    throw new Error(result.error || 'PPT翻译失败');
+                }
+                
+            } catch (error) {
+                console.error('❌ PPT翻译失败:', error);
+                alert('翻译失败: ' + error.message);
+            } finally {
+                const progressSection = document.getElementById('progressSection');
+                if (progressSection) {
+                    progressSection.style.display = 'none';
+                }
+                
+                const translateBtn = document.getElementById('translatePPTBtn');
+                translateBtn.disabled = false;
+                translateBtn.innerHTML = '<i class="fas fa-language"></i> 开始翻译PPT';
+            }
+        }
+
+        // 显示PPT翻译结果
+        function showPPTTranslationResult(result) {
+            console.log('📊 显示PPT翻译结果，完整result对象:', result);
+            console.log('   所有字段:', Object.keys(result));
+            
+            const resultContainer = document.getElementById('pptResultContainer');
+            
+            if (!resultContainer) {
+                console.error('❌ 找不到 pptResultContainer 元素');
+                return;
+            }
+            
+            // 获取下载 URL
+            let pptUrl = result.download_url || 
+                         result.translated_ppt_url || 
+                         result.file_url ||
+                         result.url ||
+                         result.translated_filename ||
+                         result.filename;
+            
+            console.log('🔍 提取到的原始值:', pptUrl);
+            
+            // 🔥 修复：统一 URL 拼接逻辑（与图片翻译保持一致）
+            if (pptUrl) {
+                // 如果已经是完整 URL，直接使用
+                if (pptUrl.startsWith('http://') || pptUrl.startsWith('https://')) {
+                    // ✅ 如果是完整 URL，检查是否需要添加 translator-api 前缀
+                    if (pptUrl.includes('offerupup.cn') && !pptUrl.includes('translator-api')) {
+                        // 修复：在 /api 前面加上 /translator-api
+                        pptUrl = pptUrl.replace('/api/files/', '/translator-api/api/files/');
+                        console.log('🔧 修正后的URL:', pptUrl);
+                    }
+                } else {
+                    // 如果是相对路径，拼接完整 URL
+                    const apiBaseUrl = window.ENV_CONFIG.getApiUrl();
+                    
+                    // 如果是文件名（不包含 /），拼接 /api/files/
+                    if (!pptUrl.includes('/')) {
+                        pptUrl = `${apiBaseUrl}/files/${pptUrl}`;
+                    } else {
+                        // 如果已经是路径，直接拼接主机
+                        const host = apiBaseUrl.replace(/\/api\/?$/, '');
+                        pptUrl = host + (pptUrl.startsWith('/') ? pptUrl : '/' + pptUrl);
+                    }
+                    
+                    console.log('🔗 拼接后的完整URL:', pptUrl);
+                }
+            }
+            
+            // 保存到全局变量
+            window.translatedPPTUrl = pptUrl;
+            window.translatedPPTFilename = result.translated_filename || result.filename || 'translated.pptx';
+            
+            console.log('💾 已保存到全局变量:');
+            console.log('   window.translatedPPTUrl:', window.translatedPPTUrl);
+            console.log('   window.translatedPPTFilename:', window.translatedPPTFilename);
+            
+            // 更新UI
+            const originalName = document.getElementById('originalPPTName');
+            const translatedName = document.getElementById('translatedPPTName');
+            const translationStats = document.getElementById('pptTranslationStats');
+            
+            if (originalName) originalName.textContent = currentPPTFile.name;
+            if (translatedName) translatedName.textContent = result.translated_filename || result.filename || '翻译完成';
+            if (translationStats) {
+                translationStats.textContent = `完成 (${result.processing_time || '未知'})`;
+            }
+            
+            // 显示结果区域
+            resultContainer.style.display = 'block';
+            
+            // 隐藏上传区域
+            const uploadContainer = document.querySelector('.ppt-upload-container');
+            const controls = document.querySelector('.ppt-translation-controls');
+            if (uploadContainer) uploadContainer.style.display = 'none';
+            if (controls) controls.style.display = 'none';
+            
+            console.log('✅ PPT翻译结果显示完成');
+        }
+
+        // 下载翻译后的PPT（模仿图片下载逻辑）
+        function downloadTranslatedPPT() {
+            console.log('🔍 检查下载链接...');
+            console.log('   window.translatedPPTUrl:', window.translatedPPTUrl);
+            console.log('   window.translatedPPTFilename:', window.translatedPPTFilename);
+            
+            if (!window.translatedPPTUrl) {
+                console.error('❌ 下载链接不存在');
+                alert('没有可下载的翻译PPT，请先翻译文件');
+                return;
+            }
+            
+            console.log('📥 开始下载PPT:', window.translatedPPTUrl);
+            
+            // 🔥 使用 fetch 下载，确保URL正确（与图片下载逻辑完全一致）
+            const downloadUrl = window.translatedPPTUrl;
+            
+            fetch(downloadUrl)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    return response.blob();
+                })
+                .then(blob => {
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = window.translatedPPTFilename || 'translated.pptx';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                    console.log('✅ PPT下载成功');
+                })
+                .catch(error => {
+                    console.error('❌ PPT下载失败:', error);
+                    alert('下载失败: ' + error.message + '\n请检查网络连接或联系管理员');
+                });
+        }
+
+        // 重置PPT翻译
+        function resetPPTTranslation() {
+            currentPPTFile = null;
+            
+            // 重置文件选择
+            const fileInput = document.getElementById('pptFileInput');
+            const preview = document.getElementById('pptPreview');
+            const translateBtn = document.getElementById('translatePPTBtn');
+            const resultContainer = document.getElementById('pptResultContainer');
+            const uploadContainer = document.querySelector('.ppt-upload-container');
+            const controls = document.querySelector('.ppt-translation-controls');
+            
+            if (fileInput) fileInput.value = '';
+            if (preview) preview.style.display = 'none';
+            if (translateBtn) translateBtn.disabled = true;
+            if (resultContainer) resultContainer.style.display = 'none';
+            if (uploadContainer) uploadContainer.style.display = 'block';
+            if (controls) controls.style.display = 'block';
+            
+            // 清理下载链接
+            window.translatedPPTUrl = null;
+            window.translatedPPTFilename = null;
+            
+            console.log('✅ PPT翻译已重置');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+# Core dependencies
+Flask==2.3.3
+Flask-CORS==4.0.0
+numpy<2.0.0
+pillow>=10.0.0
+
+# OpenCV - 使用 headless 版本（无 GUI）
+# GPU 版本请使用: opencv-contrib-python (需要编译支持 CUDA)
+opencv-python-headless>=4.8.0

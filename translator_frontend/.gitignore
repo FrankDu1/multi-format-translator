@@ -1,0 +1,36 @@
+# Environment variables (DO NOT commit .env)
+.env
+.env.local
+
+# Keep template files
+!.env.example
+!.env.development
+!.env.production
+
+# Node modules
+node_modules/
+
+# Build output
+dist/
+build/
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Docker volumes
+volumes/
+
+# Temporary files
+tmp/
+temp/
+*.tmp

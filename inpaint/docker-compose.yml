@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  # CPU 版本
+  inpaint-cpu:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: inpaint-service-cpu
+    ports:
+      - "29002:29002"
+    environment:
+      - LOG_LEVEL=INFO
+      - INPAINT_METHOD=TELEA
+      - INPAINT_RADIUS=3
+      - OUTPUT_QUALITY=95
+      - MAX_IMAGE_SIZE=10485760  # 10MB
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:29002/health', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # GPU 版本 (需要 nvidia-docker)
+  inpaint-gpu:
+    image: crpi-ppdkw6cnzgorx75r.cn-hangzhou.personal.cr.aliyuncs.com/private_ai_assistant_openwebui/inpaint
+    #build:
+    #  context: .
+    #  dockerfile: Dockerfile.gpu
+    container_name: inpaint-service-gpu
+    ports:
+      - "29002:29002"
+    environment:
+      - LOG_LEVEL=INFO
+      - INPAINT_METHOD=TELEA
+      - INPAINT_RADIUS=3
+      - OUTPUT_QUALITY=95
+      - MAX_IMAGE_SIZE=10485760
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    runtime: nvidia
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:29002/health', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    profiles:
+      - gpu

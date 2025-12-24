@@ -1,0 +1,13 @@
+paddlepaddle-gpu==3.2.0
+paddleocr==3.2.0
+paddlex==3.2.1
+flask==3.1.2
+flask-cors==6.0.1
+opencv-contrib-python==4.10.0.84
+numpy==2.2.6
+pillow==11.3.0
+pyclipper==1.3.0.post6
+shapely==2.1.2
+requests==2.32.5
+tqdm==4.67.1
+pyyaml==6.0.2

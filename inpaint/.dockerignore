@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+
+# 虚拟环境
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# 测试文件
+test_*.py
+test_*.sh
+test_*.ps1
+*_test.py
+test_image.jpg
+output_*.jpg
+
+# 文档（保留 README.md）
+QUICKSTART.md
+EXAMPLES.md
+ARCHITECTURE.md
+UPDATE_SUMMARY.md
+
+# Git
+.git/
+.gitignore
+
+# 日志
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose.yml
+Dockerfile.gpu

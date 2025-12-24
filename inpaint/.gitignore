@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 测试生成的文件
+test.jpg
+output.jpg
+test_*.jpg
+output_*.jpg
+
+# 日志文件
+*.log
+inpaint.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+.docker/
+
+# 临时文件
+*.tmp
+*.bak
