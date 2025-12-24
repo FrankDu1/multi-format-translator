@@ -4,7 +4,7 @@
 const CONFIG = {
     // 开发环境配置
     development: {
-        API_BASE_URL: 'http://localhost:29003',
+        API_BASE_URL: 'http://localhost:5002',
         API_ENDPOINTS: {
             UPLOAD: '/upload',
             TRANSLATE_TEXT: '/translate-text',
@@ -17,7 +17,7 @@ const CONFIG = {
     
     // Docker Compose 环境配置
     docker: {
-        API_BASE_URL: 'http://localhost:29003',  // 使用 Docker 内部网络
+        API_BASE_URL: 'http://localhost:5002',  // 使用 Docker 内部网络
         API_ENDPOINTS: {
             UPLOAD: '/upload',
             TRANSLATE_TEXT: '/translate-text',
@@ -30,7 +30,7 @@ const CONFIG = {
     
     // 生产环境配置
     production: {
-        API_BASE_URL: 'http://localhost:29003',  // 使用相对路径，通过 Nginx 反向代理
+        API_BASE_URL: 'http://localhost:5002',  // 使用相对路径，通过 Nginx 反向代理
         API_ENDPOINTS: {
             UPLOAD: '/api/upload',
             TRANSLATE_TEXT: '/api/translate-text',

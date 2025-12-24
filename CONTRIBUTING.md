@@ -9,7 +9,7 @@ Thank you for your interest in this project! We welcome all forms of contributio
 ### 报告 Bug / Report Bugs
 
 如果您发现了 Bug，请：
-1. 检查 [Issues](https://github.com/yourusername/translator/issues) 确认问题尚未被报告
+1. 检查 [Issues](https://github.com/FrankDu1/multi-format-translator/issues) 确认问题尚未被报告
 2. 创建新 Issue，提供以下信息：
    - 问题描述
    - 复现步骤
@@ -29,8 +29,8 @@ Thank you for your interest in this project! We welcome all forms of contributio
 
 1. **Fork 项目**
    ```bash
-   git clone https://github.com/yourusername/translator.git
-   cd translator
+   git clone https://github.com/FrankDu1/multi-format-translator.git
+   cd multi-format-translator
    ```
 
 2. **创建分支**

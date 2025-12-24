@@ -20,8 +20,13 @@ os.environ['CUDA_VISIBLE_DEVICES'] = '0'                      # 使用GPU 0
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# 环境变量配置
+OCR_HOST = os.getenv('OCR_HOST', '0.0.0.0')
+OCR_PORT = int(os.getenv('OCR_PORT', '8899'))
+ALLOWED_ORIGINS = os.getenv('ALLOWED_ORIGINS', '*')
+
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*"}})
+CORS(app, resources={r"/*": {"origins": ALLOWED_ORIGINS}})
 
 # 初始化OCR引擎
 logger.info("🚀 初始化PaddleOCR...")
@@ -503,10 +508,10 @@ def ocr_parsed_api():
     pass
 
 if __name__ == '__main__':
-    logger.info("✅ 服务启动完成，监听端口: 29001")
+    logger.info(f"✅ 服务启动完成，监听地址: {OCR_HOST}:{OCR_PORT}")
     logger.info("📋 可用接口:")
     logger.info("  - GET  /health     : 健康检查")
     logger.info("  - POST /ocr        : OCR识别（返回原始结果）")
     logger.info("  - POST /ocr/parsed : OCR识别（返回解析结果，兼容旧版本）")
     logger.info("💾 GPU显存限制: 1GB (通过环境变量控制)")
-    app.run(host='0.0.0.0', port=29001, debug=False, threaded=True)
+    app.run(host=OCR_HOST, port=OCR_PORT, debug=False, threaded=True)

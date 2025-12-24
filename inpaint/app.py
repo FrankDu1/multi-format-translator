@@ -48,12 +48,17 @@ def setup_logger():
 
 logger = setup_logger()
 
+# 环境变量配置
+INPAINT_HOST = os.getenv('INPAINT_HOST', '0.0.0.0')
+INPAINT_PORT = int(os.getenv('INPAINT_PORT', '8900'))
+ALLOWED_ORIGINS = os.getenv('ALLOWED_ORIGINS', '*')
+
 # ==================== 配置 ====================
 class Config:
     """服务配置 - 支持环境变量"""
-    # 服务配置
-    HOST = os.getenv('HOST', '0.0.0.0')
-    PORT = int(os.getenv('PORT', 29002))
+    # 服务配置 (使用统一的环境变量名称)
+    HOST = os.getenv('INPAINT_HOST', '0.0.0.0')
+    PORT = int(os.getenv('INPAINT_PORT', 8900))
     DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
     
     # 图片处理配置
@@ -79,7 +84,7 @@ config = Config()
 
 # 创建 Flask 应用
 app = Flask(__name__)
-CORS(app, origins=config.CORS_ORIGINS)
+CORS(app, origins=ALLOWED_ORIGINS if ALLOWED_ORIGINS != '*' else config.CORS_ORIGINS)
 
 # ==================== GPU 检测 ====================
 def check_gpu_support():
@@ -607,7 +612,7 @@ if __name__ == '__main__':
     logger.info("=" * 70)
     logger.info("Inpaint + Render 服务启动")
     logger.info("=" * 70)
-    logger.info(f"服务地址: http://{config.HOST}:{config.PORT}")
+    logger.info(f"服务地址: http://{INPAINT_HOST}:{INPAINT_PORT}")
     logger.info(f"日志级别: {os.getenv('LOG_LEVEL', 'INFO')}")
     logger.info(f"GPU 加速: {'启用' if GPU_AVAILABLE else '禁用 (CPU模式)'}")
     logger.info(f"Inpaint 方法: {config.INPAINT_METHOD_NAME}")
@@ -620,7 +625,7 @@ if __name__ == '__main__':
     logger.info("=" * 70)
     
     app.run(
-        host=config.HOST,
-        port=config.PORT,
+        host=INPAINT_HOST,
+        port=INPAINT_PORT,
         debug=config.DEBUG
     )

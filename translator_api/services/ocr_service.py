@@ -1,19 +1,23 @@
 import requests
 import base64
+import os
 
 class OCRResult:
     def __init__(self, text: str, box: list):
         self.text = text
         self.box = box
 
-def call_remote_ocr(image_path: str, ocr_url: str = "http://47.97.97.198:29001/ocr") -> list:
+def call_remote_ocr(image_path: str, ocr_url: str = None) -> list:
     """
     调用远程OCR服务，返回识别结果列表，每项包含text和box
     
     OCR服务接受JSON格式:
     {
-        "image_base64": "data:image/jpeg;base64,/9j/4AAQSkZJRg..."
+        "image_base64": "data:image/jpeg;base64,/9j/4AAQSkZJRg..."        "auto_rotate": false
     }
+    """
+    if ocr_url is None:
+        ocr_url = os.getenv('OCR_SERVICE_URL', 'http://localhost:8899/ocr')    }
     或
     {
         "url": "https://example.com/image.jpg"

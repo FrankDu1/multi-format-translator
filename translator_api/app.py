@@ -9,7 +9,6 @@ import sys
 current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, current_dir)
 
-from venv import logger
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from datetime import datetime
@@ -31,43 +30,40 @@ from logger_config import app_logger, api_logger, log_exception
 # 导入配置
 try:
     from config import (
-        FLASK_HOST, FLASK_PORT, FLASK_DEBUG,
-        UPLOAD_FOLDER, MAX_FILE_SIZE,
-        OCR_SERVICE_URL, INPAINT_SERVICE_URL, USE_INPAINT,
-        MONITOR_USERNAME, MONITOR_PASSWORD_HASH
+        API_HOST, API_PORT, UPLOAD_FOLDER, ARCHIVE_FOLDER, LOG_FOLDER,
+        OCR_SERVICE_URL, INPAINT_SERVICE_URL, USE_INPAINT, ALLOWED_ORIGINS,
+        MONITOR_USERNAME, MONITOR_PASSWORD_HASH, MAX_FILE_SIZE
     )
     # 🔥 修复：确保 UPLOAD_FOLDER 是绝对路径
     if not os.path.isabs(UPLOAD_FOLDER):
         UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), UPLOAD_FOLDER)
-except:
-    FLASK_HOST = "0.0.0.0"
-    FLASK_PORT = 29003
-    FLASK_DEBUG = False
+except Exception as e:
+    app_logger.warning(f"Failed to load config: {e}, using defaults")
+    API_HOST = "0.0.0.0"
+    API_PORT = 5002
     # 🔥 修复：使用相对于当前文件的路径
     UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), "uploads")
+    ARCHIVE_FOLDER = os.path.join(os.path.dirname(__file__), "archives")
+    LOG_FOLDER = os.path.join(os.path.dirname(__file__), "logs")
     MAX_FILE_SIZE = 10 * 1024 * 1024
-    OCR_SERVICE_URL = "http://localhost:29001/ocr"
-    INPAINT_SERVICE_URL = "http://localhost:29002/inpaint"
+    OCR_SERVICE_URL = "http://localhost:8899/ocr"
+    INPAINT_SERVICE_URL = "http://localhost:8900/inpaint"
     USE_INPAINT = True
+    ALLOWED_ORIGINS = ["http://localhost:5001", "http://127.0.0.1:5001"]
+    MONITOR_USERNAME = "admin"
+    from werkzeug.security import generate_password_hash
+    MONITOR_PASSWORD_HASH = generate_password_hash("change_me_in_production")
 
 app = Flask(__name__)
 
-# CORS 配置
-ALLOWED_ORIGINS = [
-    "http://localhost:5001",
-    "http://127.0.0.1:5001",
-    "https://chat.offerupup.cn",
-    "http://47.97.97.198:29003"
-]
-
+# CORS 配置（使用配置文件）
 CORS(app, origins=ALLOWED_ORIGINS, supports_credentials=True)
 
 # 🔥 新增：使用日志目录配置
-USAGE_LOG_FOLDER = os.path.join(os.path.dirname(__file__), "logs", "usage")
+USAGE_LOG_FOLDER = os.path.join(LOG_FOLDER, "usage")
 os.makedirs(USAGE_LOG_FOLDER, exist_ok=True)
 
-# 🔥 新增：归档目录配置
-ARCHIVE_FOLDER = os.path.join(os.path.dirname(__file__), "archives")
+# 🔥 确保归档目录存在
 os.makedirs(ARCHIVE_FOLDER, exist_ok=True)
 
 # 创建必要的目录
@@ -454,9 +450,10 @@ def translate_image():
             api_logger.info(f"   - Referer: {referer}")
             
             # 📌 判断是否通过 Nginx 代理（检查域名）
+            production_domain = os.getenv('PRODUCTION_DOMAIN', 'example.com')
             is_proxied = (
-                'chat.offerupup.cn' in host or 
-                'chat.offerupup.cn' in forwarded_host or
+                production_domain in host or 
+                production_domain in forwarded_host or
                 'translator-api' in original_uri or
                 'translator-api' in referer
             )
@@ -1347,9 +1344,8 @@ if __name__ == '__main__':
     app_logger.info("=" * 60)
     app_logger.info("🚀 启动图片翻译服务")
     app_logger.info("=" * 60)
-    app_logger.info(f"📍 监听地址: {FLASK_HOST}:{FLASK_PORT}")
-    app_logger.info(f"🔧 调试模式: {FLASK_DEBUG}")
-    app_logger.info(f"📁 上传目录: {UPLOAD_FOLDER}")
+    app_logger.info(f"📍 监听地址: {API_HOST}:{API_PORT}")
+    app_logger.info(f" 上传目录: {UPLOAD_FOLDER}")
     app_logger.info(f"📦 归档目录: {ARCHIVE_FOLDER}")  # 🔥 新增
     app_logger.info(f"📊 使用日志: {USAGE_LOG_FOLDER}")  # 🔥 新增
     app_logger.info(f"🔍 OCR 服务: {OCR_SERVICE_URL}")
@@ -1368,9 +1364,9 @@ if __name__ == '__main__':
     # 启动服务
     try:
         app.run(
-            host=FLASK_HOST,
-            port=FLASK_PORT,
-            debug=FLASK_DEBUG,
+            host=API_HOST,
+            port=API_PORT,
+            debug=False,
             threaded=True
         )
     except KeyboardInterrupt:

@@ -2,6 +2,19 @@
 REM 🔥 设置 UTF-8 编码
 chcp 65001 >nul
 
+REM 🔥 加载环境变量
+if exist .env (
+    for /f "usebackq tokens=1,* delims==" %%a in (".env") do (
+        if not "%%a"=="" if not "%%a:~0,1"=="#" set "%%a=%%b"
+    )
+)
+
+REM 🔥 设置默认值
+if not defined API_PORT set API_PORT=5002
+if not defined OCR_PORT set OCR_PORT=8899
+if not defined INPAINT_PORT set INPAINT_PORT=8900
+if not defined FRONTEND_PORT set FRONTEND_PORT=5001
+
 REM 🔥 设置环境变量（全局）
 set PYTHONIOENCODING=utf-8
 set NO_PROXY=localhost,127.0.0.1,::1
@@ -56,23 +69,23 @@ cd /d "%SCRIPT_DIR%"
 if not exist "logs" mkdir logs
 
 REM 🔥 OCR 服务 (后台 + UTF-8)
-echo [1/4] 启动 OCR 服务 (29001)...
-start /B "" cmd /c "chcp 65001 >nul && set PYTHONIOENCODING=utf-8 && set NO_PROXY=localhost,127.0.0.1 && cd /d "%SCRIPT_DIR%\ocr" && python app.py > "%SCRIPT_DIR%\logs\ocr.log" 2>&1"
+echo [1/4] 启动 OCR 服务 (%OCR_PORT%)...
+start /B "" cmd /c "chcp 65001 >nul && set PYTHONIOENCODING=utf-8 && set NO_PROXY=localhost,127.0.0.1 && set OCR_PORT=%OCR_PORT% && cd /d "%SCRIPT_DIR%\ocr" && python app.py > "%SCRIPT_DIR%\logs\ocr.log" 2>&1"
 timeout /t 2 >nul
 
 REM 🔥 Inpaint 服务 (后台 + UTF-8)
-echo [2/4] 启动 Inpaint 服务 (29002)...
-start /B "" cmd /c "chcp 65001 >nul && set PYTHONIOENCODING=utf-8 && set NO_PROXY=localhost,127.0.0.1 && cd /d "%SCRIPT_DIR%\inpaint" && python app.py > "%SCRIPT_DIR%\logs\inpaint.log" 2>&1"
+echo [2/4] 启动 Inpaint 服务 (%INPAINT_PORT%)...
+start /B "" cmd /c "chcp 65001 >nul && set PYTHONIOENCODING=utf-8 && set NO_PROXY=localhost,127.0.0.1 && set INPAINT_PORT=%INPAINT_PORT% && cd /d "%SCRIPT_DIR%\inpaint" && python app.py > "%SCRIPT_DIR%\logs\inpaint.log" 2>&1"
 timeout /t 2 >nul
 
 REM 🔥 API 服务 (后台 + UTF-8)
-echo [3/4] 启动 API 服务 (29003)...
-start /B "" cmd /c "chcp 65001 >nul && set PYTHONIOENCODING=utf-8 && set NO_PROXY=localhost,127.0.0.1 && cd /d "%SCRIPT_DIR%\translator_api" && python app.py > "%SCRIPT_DIR%\logs\api.log" 2>&1"
+echo [3/4] 启动 API 服务 (%API_PORT%)...
+start /B "" cmd /c "chcp 65001 >nul && set PYTHONIOENCODING=utf-8 && set NO_PROXY=localhost,127.0.0.1 && set API_PORT=%API_PORT% && cd /d "%SCRIPT_DIR%\translator_api" && python app.py > "%SCRIPT_DIR%\logs\api.log" 2>&1"
 timeout /t 2 >nul
 
 REM 🔥 前端服务 (后台 + UTF-8)
-echo [4/4] 启动前端服务 (5001)...
-start /B "" cmd /c "chcp 65001 >nul && set PYTHONIOENCODING=utf-8 && cd /d "%SCRIPT_DIR%\translator_frontend" && python -m http.server 5001 > "%SCRIPT_DIR%\logs\frontend.log" 2>&1"
+echo [4/4] 启动前端服务 (%FRONTEND_PORT%)...
+start /B "" cmd /c "chcp 65001 >nul && set PYTHONIOENCODING=utf-8 && cd /d "%SCRIPT_DIR%\translator_frontend" && python -m http.server %FRONTEND_PORT% > "%SCRIPT_DIR%\logs\frontend.log" 2>&1"
 
 echo.
 echo =========================================
@@ -80,10 +93,10 @@ echo ✅ 所有服务已在后台启动！
 echo =========================================
 echo.
 echo 服务地址:
-echo   OCR:      http://localhost:29001
-echo   Inpaint:  http://localhost:29002
-echo   API:      http://localhost:29003
-echo   前端:     http://localhost:5001
+echo   OCR:      http://localhost:%OCR_PORT%
+echo   Inpaint:  http://localhost:%INPAINT_PORT%
+echo   API:      http://localhost:%API_PORT%
+echo   前端:     http://localhost:%FRONTEND_PORT%
 echo.
 echo 日志文件:
 echo   logs/ocr.log
@@ -103,17 +116,17 @@ echo 正在停止所有服务...
 echo.
 
 REM 停止占用端口的进程
-echo [1/4] 停止 OCR 服务 (29001)...
-for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":29001" ^| findstr "LISTENING"') do taskkill /PID %%a /F >nul 2>&1
+echo [1/4] 停止 OCR 服务 (%OCR_PORT%)...
+for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":%OCR_PORT%" ^| findstr "LISTENING"') do taskkill /PID %%a /F >nul 2>&1
 
-echo [2/4] 停止 Inpaint 服务 (29002)...
-for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":29002" ^| findstr "LISTENING"') do taskkill /PID %%a /F >nul 2>&1
+echo [2/4] 停止 Inpaint 服务 (%INPAINT_PORT%)...
+for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":%INPAINT_PORT%" ^| findstr "LISTENING"') do taskkill /PID %%a /F >nul 2>&1
 
-echo [3/4] 停止 API 服务 (29003)...
-for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":29003" ^| findstr "LISTENING"') do taskkill /PID %%a /F >nul 2>&1
+echo [3/4] 停止 API 服务 (%API_PORT%)...
+for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":%API_PORT%" ^| findstr "LISTENING"') do taskkill /PID %%a /F >nul 2>&1
 
-echo [4/4] 停止前端服务 (5001)...
-for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":5001" ^| findstr "LISTENING"') do taskkill /PID %%a /F >nul 2>&1
+echo [4/4] 停止前端服务 (%FRONTEND_PORT%)...
+for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":%FRONTEND_PORT%" ^| findstr "LISTENING"') do taskkill /PID %%a /F >nul 2>&1
 
 echo.
 echo ✅ 所有服务已停止！
@@ -127,10 +140,10 @@ echo =========================================
 echo         选择要停止的服务
 echo =========================================
 echo.
-echo   1. OCR 服务 (29001)
-echo   2. Inpaint 服务 (29002)
-echo   3. API 服务 (29003)
-echo   4. 前端服务 (5001)
+echo   1. OCR 服务 (%OCR_PORT%)
+echo   2. Inpaint 服务 (%INPAINT_PORT%)
+echo   3. API 服务 (%API_PORT%)
+echo   4. 前端服务 (%FRONTEND_PORT%)
 echo   0. 返回主菜单
 echo.
 echo =========================================

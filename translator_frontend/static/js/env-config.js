@@ -11,13 +11,16 @@
 const ENV_CONFIG = {
     // ✅ 立即可用的默认配置（同步）
     API_BASE_URL: (() => {
+        // 检查是否在环境变量中配置了 API 地址
+        if (window.ENV && window.ENV.API_BASE_URL) {
+            return window.ENV.API_BASE_URL;
+        }
+        
         const hostname = window.location.hostname;
         if (hostname === 'localhost' || hostname === '127.0.0.1') {
-            return 'http://localhost:29003/api';
-        } else if (hostname === 'offerupup.cn' || hostname.includes('offerupup.cn')) {
-            return 'https://offerupup.cn/translator-api/api';
+            return 'http://localhost:5002/api';
         } else {
-            return 'https://offerupup.cn/translator-api/api';
+            return window.location.origin + '/translator-api/api';
         }
     })(),
     APP_ENV: window.location.hostname === 'localhost' ? 'development' : 'production',

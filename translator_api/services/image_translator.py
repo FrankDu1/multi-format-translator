@@ -31,8 +31,9 @@ try:
         USE_INPAINT
     )
 except ImportError:
-    OCR_SERVICE_URL = "http://47.97.97.198:29001/ocr"
-    INPAINT_SERVICE_URL = "http://47.97.97.198:29002/inpaint"
+    import os
+    OCR_SERVICE_URL = os.getenv('OCR_SERVICE_URL', 'http://localhost:8899/ocr')
+    INPAINT_SERVICE_URL = os.getenv('INPAINT_SERVICE_URL', 'http://localhost:8900/inpaint')
     USE_INPAINT = True
     logger.warning("无法导入配置，使用默认值")
 

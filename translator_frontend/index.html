@@ -62,7 +62,26 @@
     </script>
     
     <!-- ❌ 删除这些 meta 标签（已经从 .env 读取了） -->
-    <!-- <meta name="env:API_BASE_URL" content="http://localhost:29003/api"> -->
+    <!-- 环境变量注入 - 由服务器或构建工具填充 -->
+    <script>
+        window.ENV = {
+            API_BASE_URL: (function() {
+                // 从 meta 标签读取配置（用于生产环境）
+                const metaTag = document.querySelector('meta[name="env:API_BASE_URL"]');
+                if (metaTag) {
+                    return metaTag.getAttribute('content');
+                }
+                // 默认本地开发配置
+                const hostname = window.location.hostname;
+                if (hostname === 'localhost' || hostname === '127.0.0.1') {
+                    return 'http://localhost:5002/api';
+                } else {
+                    return window.location.origin + '/translator-api/api';
+                }
+            })()
+        };
+    </script>
+    <!-- <meta name="env:API_BASE_URL" content="http://localhost:5002/api"> -->
     <!-- <meta name="env:APP_ENV" content="production"> -->
     <!-- <meta name="env:VERSION" content="3.0.0"> -->
     <!-- <meta name="env:APP_NAME" content="Image Translator"> -->
@@ -498,7 +517,7 @@
             API_BASE_URL: (() => {
                 const hostname = window.location.hostname;
                 if (hostname === 'localhost' || hostname === '127.0.0.1') {
-                    return 'http://localhost:29003/api';
+                    return 'http://localhost:5002/api';
                 } else {
                     return 'https://offerupup.cn/translator-api/api';
                 }
