@@ -1,0 +1,180 @@
+name: Label Issues & PRs
+
+on:
+  issues:
+    types: [opened, edited]
+  pull_request:
+    types: [opened, edited, reopened]
+
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+    
+    steps:
+      - name: Auto-label Issues
+        if: github.event_name == 'issues'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = context.payload.issue.title.toLowerCase();
+            const body = context.payload.issue.body?.toLowerCase() || '';
+            const labels = [];
+            
+            // Bug detection
+            if (title.includes('[bug]') || title.includes('bug') || body.includes('error') || body.includes('failed')) {
+              labels.push('bug');
+            }
+            
+            // Feature detection
+            if (title.includes('[feature]') || title.includes('feature') || body.includes('feature request')) {
+              labels.push('enhancement');
+            }
+            
+            // Question detection
+            if (title.includes('[question]') || title.includes('?') || title.includes('how to')) {
+              labels.push('question');
+            }
+            
+            // Documentation
+            if (title.includes('doc') || title.includes('readme') || body.includes('documentation')) {
+              labels.push('documentation');
+            }
+            
+            // Component labels
+            if (body.includes('pdf') || title.includes('pdf')) {
+              labels.push('pdf');
+            }
+            if (body.includes('image') || title.includes('image')) {
+              labels.push('image');
+            }
+            if (body.includes('ppt') || title.includes('ppt')) {
+              labels.push('ppt');
+            }
+            if (body.includes('docker') || title.includes('docker')) {
+              labels.push('docker');
+            }
+            
+            // Priority detection
+            if (title.includes('critical') || title.includes('urgent')) {
+              labels.push('priority: high');
+            }
+            
+            // Add labels
+            if (labels.length > 0) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                labels: labels
+              });
+            }
+
+      - name: Auto-label PRs
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = context.payload.pull_request.title.toLowerCase();
+            const body = context.payload.pull_request.body?.toLowerCase() || '';
+            const labels = [];
+            
+            // Type detection from title
+            if (title.startsWith('feat') || title.includes('feature')) {
+              labels.push('enhancement');
+            } else if (title.startsWith('fix') || title.includes('bugfix')) {
+              labels.push('bug');
+            } else if (title.startsWith('docs')) {
+              labels.push('documentation');
+            } else if (title.startsWith('refactor')) {
+              labels.push('refactoring');
+            } else if (title.startsWith('test')) {
+              labels.push('testing');
+            } else if (title.startsWith('chore')) {
+              labels.push('maintenance');
+            } else if (title.startsWith('perf')) {
+              labels.push('performance');
+            }
+            
+            // Size detection based on files changed
+            const pr = context.payload.pull_request;
+            if (pr.changed_files <= 2 && pr.additions <= 20) {
+              labels.push('size: small');
+            } else if (pr.changed_files <= 10 && pr.additions <= 200) {
+              labels.push('size: medium');
+            } else {
+              labels.push('size: large');
+            }
+            
+            // Component detection
+            const files = await github.rest.pulls.listFiles({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+            
+            const filenames = files.data.map(f => f.filename).join(' ');
+            if (filenames.includes('translator_api')) {
+              labels.push('api');
+            }
+            if (filenames.includes('translator_frontend')) {
+              labels.push('frontend');
+            }
+            if (filenames.includes('ocr')) {
+              labels.push('ocr');
+            }
+            if (filenames.includes('docker')) {
+              labels.push('docker');
+            }
+            
+            // Add labels
+            if (labels.length > 0) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                labels: labels
+              });
+            }
+
+      - name: Welcome new contributors
+        if: github.event_name == 'pull_request' && github.event.action == 'opened'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Check if this is the first PR from this user
+            const creator = context.payload.pull_request.user.login;
+            const { data: prs } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'all',
+              creator: creator
+            });
+            
+            if (prs.length === 1) {
+              // This is their first PR!
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: `👋 Welcome @${creator}! Thank you for your first contribution to this project!
+                
+欢迎 @${creator}！感谢你对本项目的首次贡献！
+
+Please make sure you've:
+- ✅ Read the [Contributing Guide](CONTRIBUTING.md)
+- ✅ Followed the code style
+- ✅ Added tests if applicable
+- ✅ Updated documentation
+
+请确保你已经：
+- ✅ 阅读了[贡献指南](CONTRIBUTING.md)
+- ✅ 遵循了代码风格
+- ✅ 添加了测试（如适用）
+- ✅ 更新了文档
+
+A maintainer will review your PR soon. Thanks again! 🎉`
+              });
+            }

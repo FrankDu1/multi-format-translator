@@ -1,0 +1,96 @@
+name: Auto Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # Get the previous tag
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          
+          if [ -z "$PREV_TAG" ]; then
+            echo "First release"
+            CHANGES=$(git log --pretty=format:"- %s (%h)" --no-merges)
+          else
+            echo "Changes since $PREV_TAG"
+            CHANGES=$(git log $PREV_TAG..HEAD --pretty=format:"- %s (%h)" --no-merges)
+          fi
+          
+          # Save to file
+          echo "$CHANGES" > RELEASE_NOTES.md
+          
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          body_path: RELEASE_NOTES.md
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-and-upload-assets:
+    name: Build & Upload Assets
+    runs-on: ubuntu-latest
+    needs: create-release
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create distribution package
+        run: |
+          # Create a clean distribution
+          mkdir -p dist
+          
+          # Copy essential files
+          cp -r translator_api dist/
+          cp -r translator_frontend dist/
+          cp -r ocr dist/
+          cp -r inpaint dist/
+          
+          # Copy documentation
+          cp README.md QUICKSTART.md LICENSE .env.example dist/
+          cp docker-compose.yml manage-services.bat manage-services.sh dist/
+          
+          # Create archive
+          cd dist
+          tar -czf ../multi-format-translator-${{ github.ref_name }}.tar.gz .
+          cd ..
+          zip -r multi-format-translator-${{ github.ref_name }}.zip dist/
+
+      - name: Upload Release Assets
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            multi-format-translator-${{ github.ref_name }}.tar.gz
+            multi-format-translator-${{ github.ref_name }}.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  notify:
+    name: Notify Release
+    runs-on: ubuntu-latest
+    needs: [create-release, build-and-upload-assets]
+    
+    steps:
+      - name: Send notification
+        run: |
+          echo "✅ Release ${{ github.ref_name }} created successfully!"
+          echo "📦 Download: https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}"

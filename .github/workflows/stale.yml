@@ -1,0 +1,65 @@
+name: Stale Issues & PRs
+
+on:
+  schedule:
+    # Run daily at 00:00 UTC
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+    
+    steps:
+      - uses: actions/stale@v9
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          
+          # Issue settings
+          stale-issue-message: |
+            👋 This issue has been automatically marked as stale because it has not had recent activity.
+            It will be closed if no further activity occurs within 7 days.
+            
+            这个 Issue 因为长时间没有活动被标记为过时。
+            如果 7 天内没有进一步活动，它将被关闭。
+            
+            If you believe this is still relevant, please comment to keep it open.
+            如果你认为这仍然相关，请评论以保持打开状态。
+            
+          stale-issue-label: 'stale'
+          days-before-issue-stale: 60
+          days-before-issue-close: 7
+          
+          # PR settings
+          stale-pr-message: |
+            👋 This pull request has been automatically marked as stale because it has not had recent activity.
+            It will be closed if no further activity occurs within 14 days.
+            
+            这个 PR 因为长时间没有活动被标记为过时。
+            如果 14 天内没有进一步活动，它将被关闭。
+            
+          stale-pr-label: 'stale'
+          days-before-pr-stale: 45
+          days-before-pr-close: 14
+          
+          # Exempt labels
+          exempt-issue-labels: 'pinned,security,roadmap'
+          exempt-pr-labels: 'pinned,security'
+          
+          # Messages
+          close-issue-message: |
+            🔒 This issue was automatically closed because it has been stale for 7 days with no activity.
+            
+            这个 Issue 因为 7 天内没有活动被自动关闭。
+            
+          close-pr-message: |
+            🔒 This pull request was automatically closed because it has been stale for 14 days with no activity.
+            
+            这个 PR 因为 14 天内没有活动被自动关闭。
+            
+          # Other settings
+          operations-per-run: 30
+          remove-stale-when-updated: true
