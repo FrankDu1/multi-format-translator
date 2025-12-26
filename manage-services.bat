@@ -2,6 +2,47 @@
 REM 🔥 设置 UTF-8 编码
 chcp 65001 >nul
 
+REM 🔥 获取完整 Python 路径
+for /f "delims=" %%i in ('python -c "import sys; print(sys.executable)" 2^>nul') do set "PYTHON_EXE=%%i"
+
+REM 如果获取失败，尝试 python3
+if "%PYTHON_EXE%"=="" (
+    for /f "delims=" %%i in ('python3 -c "import sys; print(sys.executable)" 2^>nul') do set "PYTHON_EXE=%%i"
+)
+
+REM 如果还是失败，使用默认
+if "%PYTHON_EXE%"=="" (
+    set "PYTHON_EXE=python"
+)
+
+REM 测试是否能导入 Flask
+"%PYTHON_EXE%" -c "import flask" >nul 2>&1
+if %ERRORLEVEL% NEQ 0 (
+    goto python_error
+)
+
+echo [INFO] 使用 Python: %PYTHON_EXE%
+goto python_ok
+
+:python_error
+cls
+echo =========================================
+echo   [ERROR] Python 环境缺少依赖
+echo =========================================
+echo.
+echo 当前 Python: %PYTHON_EXE%
+echo.
+echo 请运行以下命令安装依赖：
+echo.
+echo   "%PYTHON_EXE%" -m pip install -r translator_api\requirements.txt
+echo   "%PYTHON_EXE%" -m pip install -r ocr\requirements.txt
+echo   "%PYTHON_EXE%" -m pip install -r inpaint\requirements.txt
+echo.
+echo =========================================
+pause
+exit /b 1
+
+:python_ok
 REM 🔥 加载环境变量
 if exist .env (
     for /f "usebackq tokens=1,* delims==" %%a in (".env") do (
@@ -9,7 +50,7 @@ if exist .env (
     )
 )
 
-REM 🔥 设置默认值
+REM 🔥 设置默认值（使用新端口）
 if not defined API_PORT set API_PORT=5002
 if not defined OCR_PORT set OCR_PORT=8899
 if not defined INPAINT_PORT set INPAINT_PORT=8900
@@ -30,19 +71,23 @@ echo =========================================
 echo      翻译服务管理菜单 (开发模式)
 echo =========================================
 echo.
-echo   当前工作目录: %SCRIPT_DIR%
+echo   Python: %PYTHON_EXE%
+echo   OCR端口: %OCR_PORT%
+echo   Inpaint端口: %INPAINT_PORT%
+echo   API端口: %API_PORT%
+echo   前端端口: %FRONTEND_PORT%
 echo.
+echo =========================================
 echo   1. 启动所有服务
 echo   2. 停止所有服务
-echo   3. 停止单个服务
-echo   4. 重启所有服务 / 单个服务
-echo   5. 查看服务状态
+echo   3. 重启所有服务
+echo   4. 查看服务状态
+echo   5. 健康检查
 echo   6. 查看日志文件
-echo   7. 健康检查
-echo   8. 清理日志文件
-echo   9. 打开服务URL
+echo   7. 打开服务页面
+echo   8. 停止单个服务
+echo   9. 重启单个服务
 echo   0. 退出
-echo.
 echo =========================================
 echo.
 
@@ -50,61 +95,84 @@ set /p choice=请选择操作 (0-9):
 
 if "%choice%"=="1" goto start
 if "%choice%"=="2" goto stop
-if "%choice%"=="3" goto stop_single
-if "%choice%"=="4" goto restart
-if "%choice%"=="5" goto status
+if "%choice%"=="3" goto restart
+if "%choice%"=="4" goto status
+if "%choice%"=="5" goto health
 if "%choice%"=="6" goto logs
-if "%choice%"=="7" goto health
-if "%choice%"=="8" goto clean
-if "%choice%"=="9" goto open_urls
-if "%choice%"=="0" goto exit
+if "%choice%"=="7" goto open_urls
+if "%choice%"=="8" goto stop_single
+if "%choice%"=="9" goto restart_single
+if "%choice%"=="0" exit
+
+echo 无效选择，请重新输入！
+timeout /t 2 >nul
 goto menu
 
 :start
 cls
 echo.
-echo 正在启动所有服务 (后台模式)...
+echo 正在启动所有服务...
+echo 使用 Python: %PYTHON_EXE%
 echo.
+
 cd /d "%SCRIPT_DIR%"
 if not exist "logs" mkdir logs
 
-REM 🔥 OCR 服务 (后台 + UTF-8)
 echo [1/4] 启动 OCR 服务 (%OCR_PORT%)...
-start /B "" cmd /c "chcp 65001 >nul && set PYTHONIOENCODING=utf-8 && set NO_PROXY=localhost,127.0.0.1 && set OCR_PORT=%OCR_PORT% && cd /d "%SCRIPT_DIR%\ocr" && python app.py > "%SCRIPT_DIR%\logs\ocr.log" 2>&1"
-timeout /t 2 >nul
+start /B "" cmd /c "chcp 65001 >nul && set PYTHONIOENCODING=utf-8 && set NO_PROXY=localhost,127.0.0.1 && set OCR_PORT=%OCR_PORT% && cd /d "%SCRIPT_DIR%\ocr" && "%PYTHON_EXE%" app.py > "%SCRIPT_DIR%\logs\ocr.log" 2>&1"
+timeout /t 3 >nul
 
-REM 🔥 Inpaint 服务 (后台 + UTF-8)
 echo [2/4] 启动 Inpaint 服务 (%INPAINT_PORT%)...
-start /B "" cmd /c "chcp 65001 >nul && set PYTHONIOENCODING=utf-8 && set NO_PROXY=localhost,127.0.0.1 && set INPAINT_PORT=%INPAINT_PORT% && cd /d "%SCRIPT_DIR%\inpaint" && python app.py > "%SCRIPT_DIR%\logs\inpaint.log" 2>&1"
-timeout /t 2 >nul
+start /B "" cmd /c "chcp 65001 >nul && set PYTHONIOENCODING=utf-8 && set NO_PROXY=localhost,127.0.0.1 && set INPAINT_PORT=%INPAINT_PORT% && cd /d "%SCRIPT_DIR%\inpaint" && "%PYTHON_EXE%" app.py > "%SCRIPT_DIR%\logs\inpaint.log" 2>&1"
+timeout /t 3 >nul
 
-REM 🔥 API 服务 (后台 + UTF-8)
 echo [3/4] 启动 API 服务 (%API_PORT%)...
-start /B "" cmd /c "chcp 65001 >nul && set PYTHONIOENCODING=utf-8 && set NO_PROXY=localhost,127.0.0.1 && set API_PORT=%API_PORT% && cd /d "%SCRIPT_DIR%\translator_api" && python app.py > "%SCRIPT_DIR%\logs\api.log" 2>&1"
-timeout /t 2 >nul
+start /B "" cmd /c "chcp 65001 >nul && set PYTHONIOENCODING=utf-8 && set NO_PROXY=localhost,127.0.0.1 && set API_PORT=%API_PORT% && cd /d "%SCRIPT_DIR%\translator_api" && "%PYTHON_EXE%" app.py > "%SCRIPT_DIR%\logs\api.log" 2>&1"
+timeout /t 3 >nul
 
-REM 🔥 前端服务 (后台 + UTF-8)
 echo [4/4] 启动前端服务 (%FRONTEND_PORT%)...
-start /B "" cmd /c "chcp 65001 >nul && set PYTHONIOENCODING=utf-8 && cd /d "%SCRIPT_DIR%\translator_frontend" && python -m http.server %FRONTEND_PORT% > "%SCRIPT_DIR%\logs\frontend.log" 2>&1"
+start /B "" cmd /c "chcp 65001 >nul && set PYTHONIOENCODING=utf-8 && cd /d "%SCRIPT_DIR%\translator_frontend" && "%PYTHON_EXE%" -m http.server %FRONTEND_PORT% > "%SCRIPT_DIR%\logs\frontend.log" 2>&1"
 
 echo.
-echo =========================================
-echo ✅ 所有服务已在后台启动！
-echo =========================================
+echo ✅ 所有服务启动命令已发送！
 echo.
-echo 服务地址:
-echo   OCR:      http://localhost:%OCR_PORT%
-echo   Inpaint:  http://localhost:%INPAINT_PORT%
-echo   API:      http://localhost:%API_PORT%
+echo 等待 5 秒后检查状态...
+timeout /t 5 >nul
+
+REM 自动检查状态
+echo.
+echo 服务状态检查:
+netstat -ano | findstr ":%OCR_PORT%.*LISTENING" >nul 2>&1
+if %ERRORLEVEL% EQU 0 (
+    echo ✅ OCR服务 ^(%OCR_PORT%^): 已启动
+) else (
+    echo ❌ OCR服务 ^(%OCR_PORT%^): 启动失败，请查看日志
+)
+
+netstat -ano | findstr ":%INPAINT_PORT%.*LISTENING" >nul 2>&1
+if %ERRORLEVEL% EQU 0 (
+    echo ✅ Inpaint服务 ^(%INPAINT_PORT%^): 已启动
+) else (
+    echo ❌ Inpaint服务 ^(%INPAINT_PORT%^): 启动失败，请查看日志
+)
+
+netstat -ano | findstr ":%API_PORT%.*LISTENING" >nul 2>&1
+if %ERRORLEVEL% EQU 0 (
+    echo ✅ API服务 ^(%API_PORT%^): 已启动
+) else (
+    echo ❌ API服务 ^(%API_PORT%^): 启动失败，请查看日志
+)
+
+netstat -ano | findstr ":%FRONTEND_PORT%.*LISTENING" >nul 2>&1
+if %ERRORLEVEL% EQU 0 (
+    echo ✅ 前端服务 ^(%FRONTEND_PORT%^): 已启动
+) else (
+    echo ❌ 前端服务 ^(%FRONTEND_PORT%^): 启动失败，请查看日志
+)
+
+echo.
+echo 访问地址:
 echo   前端:     http://localhost:%FRONTEND_PORT%
-echo.
-echo 日志文件:
-echo   logs/ocr.log
-echo   logs/inpaint.log
-echo   logs/api.log
-echo   logs/frontend.log
-echo.
-echo 💡 提示: 已启用 UTF-8 支持和代理绕过
 echo.
 pause
 goto menu
@@ -115,232 +183,13 @@ echo.
 echo 正在停止所有服务...
 echo.
 
-REM 停止占用端口的进程
-echo [1/4] 停止 OCR 服务 (%OCR_PORT%)...
 for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":%OCR_PORT%" ^| findstr "LISTENING"') do taskkill /PID %%a /F >nul 2>&1
-
-echo [2/4] 停止 Inpaint 服务 (%INPAINT_PORT%)...
 for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":%INPAINT_PORT%" ^| findstr "LISTENING"') do taskkill /PID %%a /F >nul 2>&1
-
-echo [3/4] 停止 API 服务 (%API_PORT%)...
 for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":%API_PORT%" ^| findstr "LISTENING"') do taskkill /PID %%a /F >nul 2>&1
-
-echo [4/4] 停止前端服务 (%FRONTEND_PORT%)...
 for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":%FRONTEND_PORT%" ^| findstr "LISTENING"') do taskkill /PID %%a /F >nul 2>&1
 
 echo.
 echo ✅ 所有服务已停止！
-echo.
-pause
-goto menu
-
-:stop_single
-cls
-echo =========================================
-echo         选择要停止的服务
-echo =========================================
-echo.
-echo   1. OCR 服务 (%OCR_PORT%)
-echo   2. Inpaint 服务 (%INPAINT_PORT%)
-echo   3. API 服务 (%API_PORT%)
-echo   4. 前端服务 (%FRONTEND_PORT%)
-echo   0. 返回主菜单
-echo.
-echo =========================================
-echo.
-
-set /p stop_choice=请选择要停止的服务 (0-4): 
-
-if "%stop_choice%"=="0" goto menu
-if "%stop_choice%"=="1" goto stop_ocr
-if "%stop_choice%"=="2" goto stop_inpaint
-if "%stop_choice%"=="3" goto stop_api
-if "%stop_choice%"=="4" goto stop_frontend
-
-echo.
-echo ❌ 无效选择！
-timeout /t 2 >nul
-goto stop_single
-
-:stop_ocr
-echo.
-echo 正在停止 OCR 服务 (29001)...
-for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":29001" ^| findstr "LISTENING"') do taskkill /PID %%a /F >nul 2>&1
-echo ✅ OCR 服务已停止！
-echo.
-pause
-goto menu
-
-:stop_inpaint
-echo.
-echo 正在停止 Inpaint 服务 (29002)...
-for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":29002" ^| findstr "LISTENING"') do taskkill /PID %%a /F >nul 2>&1
-echo ✅ Inpaint 服务已停止！
-echo.
-pause
-goto menu
-
-:stop_api
-echo.
-echo 正在停止 API 服务 (29003)...
-for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":29003" ^| findstr "LISTENING"') do taskkill /PID %%a /F >nul 2>&1
-echo ✅ API 服务已停止！
-echo.
-pause
-goto menu
-
-:stop_frontend
-echo.
-echo 正在停止前端服务 (5001)...
-for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":5001" ^| findstr "LISTENING"') do taskkill /PID %%a /F >nul 2>&1
-echo ✅ 前端服务已停止！
-echo.
-pause
-goto menu
-
-:restart
-cls
-echo =========================================
-echo         重启服务菜单
-echo =========================================
-echo.
-echo   1. 重启所有服务
-echo   2. 重启单个服务
-echo   0. 返回主菜单
-echo.
-echo =========================================
-echo.
-
-set /p restart_choice=请选择操作 (0-2): 
-
-if "%restart_choice%"=="1" goto restart_all
-if "%restart_choice%"=="2" goto restart_single
-if "%restart_choice%"=="0" goto menu
-goto restart
-
-:restart_all
-cls
-echo.
-echo 正在重启所有服务...
-echo.
-
-REM 停止所有服务
-echo 停止所有服务...
-for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":29001" ^| findstr "LISTENING"') do taskkill /PID %%a /F >nul 2>&1
-for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":29002" ^| findstr "LISTENING"') do taskkill /PID %%a /F >nul 2>&1
-for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":29003" ^| findstr "LISTENING"') do taskkill /PID %%a /F >nul 2>&1
-for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":5001" ^| findstr "LISTENING"') do taskkill /PID %%a /F >nul 2>&1
-
-echo.
-echo 等待 3 秒...
-timeout /t 3 >nul
-
-REM 启动所有服务
-cd /d "%SCRIPT_DIR%"
-if not exist "logs" mkdir logs
-
-echo.
-echo 启动所有服务...
-echo [1/4] 启动 OCR 服务 (29001)...
-start /B "" cmd /c "chcp 65001 >nul && set PYTHONIOENCODING=utf-8 && set NO_PROXY=localhost,127.0.0.1 && cd /d "%SCRIPT_DIR%\ocr" && python app.py > "%SCRIPT_DIR%\logs\ocr.log" 2>&1"
-timeout /t 2 >nul
-
-echo [2/4] 启动 Inpaint 服务 (29002)...
-start /B "" cmd /c "chcp 65001 >nul && set PYTHONIOENCODING=utf-8 && set NO_PROXY=localhost,127.0.0.1 && cd /d "%SCRIPT_DIR%\inpaint" && python app.py > "%SCRIPT_DIR%\logs\inpaint.log" 2>&1"
-timeout /t 2 >nul
-
-echo [3/4] 启动 API 服务 (29003)...
-start /B "" cmd /c "chcp 65001 >nul && set PYTHONIOENCODING=utf-8 && set NO_PROXY=localhost,127.0.0.1 && cd /d "%SCRIPT_DIR%\translator_api" && python app.py > "%SCRIPT_DIR%\logs\api.log" 2>&1"
-timeout /t 2 >nul
-
-echo [4/4] 启动前端服务 (5001)...
-start /B "" cmd /c "chcp 65001 >nul && set PYTHONIOENCODING=utf-8 && cd /d "%SCRIPT_DIR%\translator_frontend" && python -m http.server 5001 > "%SCRIPT_DIR%\logs\frontend.log" 2>&1"
-
-echo.
-echo ✅ 所有服务已重启完成！
-echo.
-pause
-goto menu
-
-:restart_single
-cls
-echo =========================================
-echo         选择要重启的服务
-echo =========================================
-echo.
-echo   1. OCR 服务 (29001)
-echo   2. Inpaint 服务 (29002)
-echo   3. API 服务 (29003)
-echo   4. 前端服务 (5001)
-echo   0. 返回重启菜单
-echo.
-echo =========================================
-echo.
-
-set /p single_choice=请选择要重启的服务 (0-4): 
-
-if "%single_choice%"=="0" goto restart
-
-cd /d "%SCRIPT_DIR%"
-if not exist "logs" mkdir logs
-
-REM 重启 OCR 服务
-if "%single_choice%"=="1" (
-    echo.
-    echo 正在停止 OCR 服务...
-    for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":29001" ^| findstr "LISTENING"') do taskkill /PID %%a /F >nul 2>&1
-    echo 等待 2 秒...
-    timeout /t 2 >nul
-    echo 正在启动 OCR 服务...
-    start /B "" cmd /c "chcp 65001 >nul && set PYTHONIOENCODING=utf-8 && set NO_PROXY=localhost,127.0.0.1 && cd /d "%SCRIPT_DIR%\ocr" && python app.py > "%SCRIPT_DIR%\logs\ocr.log" 2>&1"
-)
-
-REM 重启 Inpaint 服务
-if "%single_choice%"=="2" (
-    echo.
-    echo 正在停止 Inpaint 服务...
-    for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":29002" ^| findstr "LISTENING"') do taskkill /PID %%a /F >nul 2>&1
-    echo 等待 2 秒...
-    timeout /t 2 >nul
-    echo 正在启动 Inpaint 服务...
-    start /B "" cmd /c "chcp 65001 >nul && set PYTHONIOENCODING=utf-8 && set NO_PROXY=localhost,127.0.0.1 && cd /d "%SCRIPT_DIR%\inpaint" && python app.py > "%SCRIPT_DIR%\logs\inpaint.log" 2>&1"
-)
-
-REM 重启 API 服务
-if "%single_choice%"=="3" (
-    echo.
-    echo 正在停止 API 服务...
-    for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":29003" ^| findstr "LISTENING"') do taskkill /PID %%a /F >nul 2>&1
-    echo 等待 2 秒...
-    timeout /t 2 >nul
-    echo 正在启动 API 服务...
-    start /B "" cmd /c "chcp 65001 >nul && set PYTHONIOENCODING=utf-8 && set NO_PROXY=localhost,127.0.0.1 && cd /d "%SCRIPT_DIR%\translator_api" && python app.py > "%SCRIPT_DIR%\logs\api.log" 2>&1"
-)
-
-REM 重启前端服务
-if "%single_choice%"=="4" (
-    echo.
-    echo 正在停止前端服务...
-    for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":5001" ^| findstr "LISTENING"') do taskkill /PID %%a /F >nul 2>&1
-    echo 等待 2 秒...
-    timeout /t 2 >nul
-    echo 正在启动前端服务...
-    start /B "" cmd /c "chcp 65001 >nul && set PYTHONIOENCODING=utf-8 && cd /d "%SCRIPT_DIR%\translator_frontend" && python -m http.server 5001 > "%SCRIPT_DIR%\logs\frontend.log" 2>&1"
-)
-
-if "%single_choice%"=="1" goto single_restart_complete
-if "%single_choice%"=="2" goto single_restart_complete
-if "%single_choice%"=="3" goto single_restart_complete
-if "%single_choice%"=="4" goto single_restart_complete
-
-echo.
-echo ❌ 无效选择！
-timeout /t 2 >nul
-goto restart_single
-
-:single_restart_complete
-echo.
-echo ✅ 服务重启完成！
 echo.
 pause
 goto menu
@@ -353,32 +202,32 @@ echo   服务状态
 echo =========================================
 echo.
 
-netstat -ano | findstr ":29001.*LISTENING" >nul 2>&1
+netstat -ano | findstr ":%OCR_PORT%.*LISTENING" >nul 2>&1
 if %ERRORLEVEL% EQU 0 (
-    echo ✅ OCR服务 ^(29001^): 运行中
+    echo ✅ OCR服务 ^(%OCR_PORT%^): 运行中
 ) else (
-    echo ❌ OCR服务 ^(29001^): 未运行
+    echo ❌ OCR服务 ^(%OCR_PORT%^): 未运行
 )
 
-netstat -ano | findstr ":29002.*LISTENING" >nul 2>&1
+netstat -ano | findstr ":%INPAINT_PORT%.*LISTENING" >nul 2>&1
 if %ERRORLEVEL% EQU 0 (
-    echo ✅ Inpaint服务 ^(29002^): 运行中
+    echo ✅ Inpaint服务 ^(%INPAINT_PORT%^): 运行中
 ) else (
-    echo ❌ Inpaint服务 ^(29002^): 未运行
+    echo ❌ Inpaint服务 ^(%INPAINT_PORT%^): 未运行
 )
 
-netstat -ano | findstr ":29003.*LISTENING" >nul 2>&1
+netstat -ano | findstr ":%API_PORT%.*LISTENING" >nul 2>&1
 if %ERRORLEVEL% EQU 0 (
-    echo ✅ API服务 ^(29003^): 运行中
+    echo ✅ API服务 ^(%API_PORT%^): 运行中
 ) else (
-    echo ❌ API服务 ^(29003^): 未运行
+    echo ❌ API服务 ^(%API_PORT%^): 未运行
 )
 
-netstat -ano | findstr ":5001.*LISTENING" >nul 2>&1
+netstat -ano | findstr ":%FRONTEND_PORT%.*LISTENING" >nul 2>&1
 if %ERRORLEVEL% EQU 0 (
-    echo ✅ 前端服务 ^(5001^): 运行中
+    echo ✅ 前端服务 ^(%FRONTEND_PORT%^): 运行中
 ) else (
-    echo ❌ 前端服务 ^(5001^): 未运行
+    echo ❌ 前端服务 ^(%FRONTEND_PORT%^): 未运行
 )
 
 echo.
@@ -479,32 +328,32 @@ echo   健康检查
 echo =========================================
 echo.
 
-echo [1/4] 检查 OCR 服务 (29001)...
-curl -s http://localhost:29001/health >nul 2>&1
+echo [1/4] 检查 OCR 服务 (%OCR_PORT%)...
+curl -s http://localhost:%OCR_PORT%/health >nul 2>&1
 if %ERRORLEVEL% EQU 0 (
     echo ✅ OCR服务: 正常
 ) else (
     echo ❌ OCR服务: 异常或未启动
 )
 
-echo [2/4] 检查 Inpaint 服务 (29002)...
-curl -s http://localhost:29002/health >nul 2>&1
+echo [2/4] 检查 Inpaint 服务 (%INPAINT_PORT%)...
+curl -s http://localhost:%INPAINT_PORT%/health >nul 2>&1
 if %ERRORLEVEL% EQU 0 (
     echo ✅ Inpaint服务: 正常
 ) else (
     echo ❌ Inpaint服务: 异常或未启动
 )
 
-echo [3/4] 检查 API 服务 (29003)...
-curl -s http://localhost:29003/api/health >nul 2>&1
+echo [3/4] 检查 API 服务 (%API_PORT%)...
+curl -s http://localhost:%API_PORT%/api/health >nul 2>&1
 if %ERRORLEVEL% EQU 0 (
     echo ✅ API服务: 正常
 ) else (
     echo ❌ API服务: 异常或未启动
 )
 
-echo [4/4] 检查前端服务 (5001)...
-curl -s http://localhost:5001 >nul 2>&1
+echo [4/4] 检查前端服务 (%FRONTEND_PORT%)...
+curl -s http://localhost:%FRONTEND_PORT% >nul 2>&1
 if %ERRORLEVEL% EQU 0 (
     echo ✅ 前端服务: 正常
 ) else (
@@ -517,42 +366,18 @@ echo.
 pause
 goto menu
 
-:clean
-cls
-echo.
-echo ⚠️  警告: 这将删除所有日志文件！
-echo.
-set /p confirm=确认继续? (y/n): 
-
-if /i "%confirm%"=="y" (
-    if exist "%SCRIPT_DIR%\logs" (
-        del /Q "%SCRIPT_DIR%\logs\*.log" 2>nul
-        echo.
-        echo ✅ 日志文件已清理！
-    ) else (
-        echo.
-        echo ⚠️  日志目录不存在
-    )
-) else (
-    echo.
-    echo 已取消操作
-)
-echo.
-pause
-goto menu
-
 :open_urls
 cls
 echo.
 echo 正在打开服务页面...
 echo.
-start http://localhost:29001
+start http://localhost:%OCR_PORT%
 timeout /t 1 >nul
-start http://localhost:29002
+start http://localhost:%INPAINT_PORT%
 timeout /t 1 >nul
-start http://localhost:29003
+start http://localhost:%API_PORT%
 timeout /t 1 >nul
-start http://localhost:5001
+start http://localhost:%FRONTEND_PORT%
 echo.
 echo ✅ 已在浏览器中打开所有服务！
 echo.
