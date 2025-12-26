@@ -735,10 +735,15 @@ def translate_text():
         summary_result = None
         if enable_summary:
             try:
-                from services.ollama_service import ollama_service
+                # 根据配置动态导入 AI 服务
+                from config import AI_PROVIDER
+                if AI_PROVIDER == 'qwen':
+                    from services.qwen_service import qwen_service as ai_service
+                else:
+                    from services.ollama_service import ollama_service as ai_service
                 
-                api_logger.info(f"🧠 开始生成AI总结...")
-                summary_result = ollama_service.generate_summary(
+                api_logger.info(f"🧠 开始生成AI总结 (提供商: {AI_PROVIDER})...")
+                summary_result = ai_service.generate_summary(
                     text=translated_text,
                     target_language=tgt_lang
                 )

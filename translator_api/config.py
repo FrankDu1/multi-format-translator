@@ -45,7 +45,29 @@ MONITOR_PASSWORD_HASH = os.getenv('MONITOR_PASSWORD_HASH',
 # 文件大小限制
 MAX_FILE_SIZE = int(os.getenv('MAX_FILE_SIZE', 16 * 1024 * 1024))  # 16MB
 
-# AI 配置
+# ========== AI 总结服务配置 ==========
+# 选择 AI 提供商: 'ollama' (本地), 'qwen' (阿里云), 'openai' (OpenAI)
+AI_PROVIDER = os.getenv('AI_PROVIDER', 'ollama')
+
+# Ollama 配置（本地部署）
+OLLAMA_BASE_URL = os.getenv('OLLAMA_BASE_URL', 'http://localhost:11434')
+OLLAMA_MODEL = os.getenv('OLLAMA_MODEL', 'qwen2.5:7b')
+OLLAMA_TIMEOUT = int(os.getenv('OLLAMA_TIMEOUT', '60'))
+OLLAMA_TEMPERATURE = float(os.getenv('OLLAMA_TEMPERATURE', '0.7'))
+
+# 通义千问配置（阿里云 DashScope）
+QWEN_API_KEY = os.getenv('QWEN_API_KEY', '')
+QWEN_BASE_URL = os.getenv('QWEN_BASE_URL', 'https://dashscope.aliyuncs.com/compatible-mode/v1')
+QWEN_MODEL = os.getenv('QWEN_MODEL', 'qwen-plus')
+QWEN_TIMEOUT = int(os.getenv('QWEN_TIMEOUT', '60'))
+QWEN_TEMPERATURE = float(os.getenv('QWEN_TEMPERATURE', '0.7'))
+
+# OpenAI 配置（未来扩展）
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY', '')
 OPENAI_BASE_URL = os.getenv('OPENAI_BASE_URL', 'https://api.openai.com/v1')
-OLLAMA_BASE_URL = os.getenv('OLLAMA_BASE_URL', 'http://localhost:11434')
+OPENAI_MODEL = os.getenv('OPENAI_MODEL', 'gpt-3.5-turbo')
+OPENAI_TIMEOUT = int(os.getenv('OPENAI_TIMEOUT', '60'))
+OPENAI_TEMPERATURE = float(os.getenv('OPENAI_TEMPERATURE', '0.7'))
+
+# 通用配置
+SUMMARY_MAX_WORDS = int(os.getenv('SUMMARY_MAX_WORDS', '200'))  # 总结最大字数

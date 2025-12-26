@@ -45,13 +45,18 @@ class NLLBTranslator:
         Args:
             model_name: 模型名称，如果为None则从配置文件读取
         """
-        # 🔥 新增: 初始化 Ollama 服务
+        # 🔥 动态导入 AI 服务
         try:
-            from services.ollama_service import ollama_service
-            self.ollama_service = ollama_service
-            logger.info("✓ Ollama AI 总结服务已加载")
+            from config import AI_PROVIDER
+            if AI_PROVIDER == 'qwen':
+                from services.qwen_service import qwen_service
+                self.ollama_service = qwen_service
+            else:
+                from services.ollama_service import ollama_service
+                self.ollama_service = ollama_service
+            logger.info(f"✓ AI总结服务已加载 (提供商: {AI_PROVIDER})")
         except Exception as e:
-            logger.warning(f"⚠️ Ollama AI 总结服务加载失败: {e}")
+            logger.warning(f"⚠️ AI总结服务加载失败: {e}")
             self.ollama_service = None
     
         # 【修改】优先使用配置文件
