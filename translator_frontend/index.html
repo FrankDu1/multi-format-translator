@@ -636,6 +636,13 @@
                     if (el) el.style.display = 'none';
                 });
             
+            // 🔥 新增：隐藏所有结果区域
+            ['textResultSection', 'imageResultContainer', 'pptResultContainer', 'pdfDownloadCard', 'aiSummaryCard']
+                .forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.style.display = 'none';
+                });
+            
             // 显示目标section
             const map = {
                 text: 'textInputSection', 
