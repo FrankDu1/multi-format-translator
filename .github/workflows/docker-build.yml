@@ -63,7 +63,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/multi-format-translator-${{ matrix.service.image }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/${{ matrix.service.image }}
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -90,7 +90,7 @@ jobs:
           echo "### 🐳 Docker镜像构建完成" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**服务:** ${{ matrix.service.name }}" >> $GITHUB_STEP_SUMMARY
-          echo "**镜像:** ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/multi-format-translator-${{ matrix.service.image }}" >> $GITHUB_STEP_SUMMARY
+          echo "**镜像:** ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/${{ matrix.service.image }}" >> $GITHUB_STEP_SUMMARY
           echo "**标签:** ${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
 
   test-compose:
