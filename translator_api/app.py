@@ -8,7 +8,8 @@ import sys
 # 🔥 确保能找到 config.py
 current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, current_dir)
-
+from dotenv import load_dotenv
+load_dotenv()
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from datetime import datetime
@@ -21,11 +22,17 @@ from datetime import timedelta
 from functools import wraps
 from werkzeug.security import check_password_hash, generate_password_hash
 import base64
+from services.ali_translate_client import AliTranslateClient
+
 
 
 # 导入日志配置
 from logger_config import app_logger, api_logger, log_exception
 
+# use remote translate service or local
+USE_CLOUD_TRANSLATE = os.getenv('USE_CLOUD_TRANSLATE', 'false').lower() == 'true'
+app_logger.info(f"[启动] USE_CLOUD_TRANSLATE 环境变量: {os.getenv('USE_CLOUD_TRANSLATE')}")
+app_logger.info(f"[启动] USE_CLOUD_TRANSLATE 解析结果: {USE_CLOUD_TRANSLATE}")
 
 # 导入配置
 try:
@@ -708,21 +715,35 @@ def translate_text():
        
         # 3. 调用统一的翻译器
         try:
-            # 🔥 使用与图片翻译相同的翻译器
-            from services.text_translator import split_text_into_chunks
-            from services.nllb_translator_pipeline import get_translator
+            #USE_CLOUD_TRANSLATE=True
+            if USE_CLOUD_TRANSLATE:
+                # 云端翻译
+                app_logger.info("[翻译] 使用阿里云远端翻译")
+                client = AliTranslateClient()
+                result = client.translate(text, source_lang=src_lang, target_lang=tgt_lang)
 
-            # 分段处理
-            chunks = split_text_into_chunks(text, max_length=400)
-            api_logger.info(f"   分段数量: {len(chunks)}")
+                if result.get('success'):
+                    translated_text = result.get('translated_text', '')
+                    if not translated_text:
+                        raise Exception("Translation returned empty result")
+                else:
+                    raise Exception(result.get('error_message', 'Aliyun translation failed'))
+            else:
+                # 🔥 使用与图片翻译相同的翻译器
+                from services.text_translator import split_text_into_chunks
+                from services.nllb_translator_pipeline import get_translator
 
-            translator = get_translator()
-            translated_chunks = translator.translate_batch(chunks, src_lang, tgt_lang)
-            translated_text = '\n'.join(translated_chunks)
-            
-            if not translated_text:
-                raise Exception("Translation returned empty result")
-            
+                # 分段处理
+                chunks = split_text_into_chunks(text, max_length=400)
+                api_logger.info(f"   分段数量: {len(chunks)}")
+
+                translator = get_translator()
+                translated_chunks = translator.translate_batch(chunks, src_lang, tgt_lang)
+                translated_text = '\n'.join(translated_chunks)
+                
+                if not translated_text:
+                    raise Exception("Translation returned empty result")
+                
         except Exception as translation_error:
             api_logger.error(f"❌ Translation error: {translation_error}")
             log_exception(api_logger, translation_error)

@@ -6,7 +6,17 @@ NLLB (No Language Left Behind) 翻译服务
 import os
 import logging
 import torch
+import re
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+from dotenv import load_dotenv
+load_dotenv()
+from services.ali_translate_client import AliTranslateClient
+from logger_config import app_logger, api_logger, log_exception
+import concurrent.futures
+
+USE_CLOUD_TRANSLATE = os.getenv('USE_CLOUD_TRANSLATE', 'false').lower() == 'true'
+app_logger.info(f"[启动] USE_CLOUD_TRANSLATE 环境变量: {os.getenv('USE_CLOUD_TRANSLATE')}")
+app_logger.info(f"[启动] USE_CLOUD_TRANSLATE 解析结果: {USE_CLOUD_TRANSLATE}")
 
 # 【新增】导入配置
 try:
@@ -119,6 +129,243 @@ class NLLBTranslator:
         logger.info(f"  Beam搜索: {self.num_beams}")
         logger.info(f"  FP16: {self.use_fp16}")
     
+    def _translate_batch_cloud_smart(self, texts, src_lang='zh', tgt_lang='en'):
+        """
+        云端翻译 - 智能分组策略
+        
+        策略：
+        1. 短文本（<30字符）：单独翻译（表格单元格、列表标记）
+        2. 长文本（>=30字符）：智能合并翻译（最多5个一组，总长度<900字符）
+        """
+        from concurrent.futures import ThreadPoolExecutor
+        import time
+        
+        client = AliTranslateClient()
+        
+        logger.info(f"📊 [云端智能] 开始翻译 {len(texts)} 个文本片段...")
+        
+        # 步骤1：分析文本，分为短文本和长文本
+        short_texts = []  # [(index, text)]
+        long_texts = []   # [(index, text)]
+        
+        for idx, text in enumerate(texts):
+            if not text or not str(text).strip():
+                continue
+            
+            cleaned = str(text).strip()
+            text_len = len(cleaned)
+            
+            if text_len < 30:
+                short_texts.append((idx, cleaned))
+            else:
+                long_texts.append((idx, cleaned))
+        
+        logger.info(f"  - 短文本: {len(short_texts)} 个 (单独翻译)")
+        logger.info(f"  - 长文本: {len(long_texts)} 个 (智能合并)")
+        
+        # 初始化结果数组
+        results = [''] * len(texts)
+        
+        # 步骤2：并发翻译短文本
+        def translate_single(item):
+            idx, text = item
+            max_retries = 3
+            
+            for attempt in range(max_retries):
+                try:
+                    result = client.translate(text, source_lang=src_lang, target_lang=tgt_lang)
+                    if result.get('success'):
+                        return idx, result.get('translated_text', text)
+                except Exception as e:
+                    if attempt < max_retries - 1:
+                        time.sleep(0.5)
+                    else:
+                        logger.warning(f"⚠️ 翻译失败: {text[:20]}...")
+            
+            return idx, text  # 失败返回原文
+        
+        if short_texts:
+            logger.info(f"🔄 并发翻译 {len(short_texts)} 个短文本...")
+            with ThreadPoolExecutor(max_workers=10) as executor:
+                for idx, translated in executor.map(translate_single, short_texts):
+                    results[idx] = translated
+            logger.info(f"✅ 短文本翻译完成")
+        
+        # 步骤3：智能合并翻译长文本
+        if long_texts:
+            logger.info(f"🔄 智能合并翻译 {len(long_texts)} 个长文本...")
+            
+            # 分组：每组最多5个文本，总长度<900字符
+            groups = []
+            current_group = []
+            current_length = 0
+            max_group_size = 5
+            max_group_length = 900
+            
+            for idx, text in long_texts:
+                text_len = len(text)
+                
+                # 判断是否需要新建组
+                if (current_group and 
+                    (len(current_group) >= max_group_size or 
+                     current_length + text_len > max_group_length)):
+                    groups.append(current_group)
+                    current_group = []
+                    current_length = 0
+                
+                current_group.append((idx, text))
+                current_length += text_len
+            
+            if current_group:
+                groups.append(current_group)
+            
+            logger.info(f"  分为 {len(groups)} 个合并组")
+            
+            # 翻译每个组
+            for group_idx, group in enumerate(groups):
+                if (group_idx + 1) % 5 == 0 or group_idx == len(groups) - 1:
+                    logger.info(f"  进度: {group_idx + 1}/{len(groups)}")
+                
+                # 使用换行作为分隔符（更自然）
+                separator = "\n\n"
+                combined_text = separator.join([text for _, text in group])
+                
+                # 翻译
+                max_retries = 3
+                translated = None
+                
+                for attempt in range(max_retries):
+                    try:
+                        result = client.translate(
+                            combined_text, 
+                            source_lang=src_lang, 
+                            target_lang=tgt_lang
+                        )
+                        
+                        if result.get('success'):
+                            translated = result.get('translated_text', '').strip()
+                            break
+                    except Exception as e:
+                        logger.warning(f"⚠️ 请求异常 (尝试{attempt+1}/{max_retries}): {e}")
+                    
+                    if attempt < max_retries - 1:
+                        time.sleep(1 * (attempt + 1))
+                
+                if not translated:
+                    # 翻译失败，使用原文
+                    logger.error(f"❌ 组{group_idx+1}翻译失败，使用原文")
+                    for idx, text in group:
+                        results[idx] = text
+                    continue
+                
+                # 智能分割翻译结果
+                translated_parts = translated.split('\n\n')
+                
+                # 如果分割数量不匹配
+                if len(translated_parts) != len(group):
+                    # 尝试按单个换行符分割
+                    translated_parts = translated.split('\n')
+                    translated_parts = [p.strip() for p in translated_parts if p.strip()]
+                
+                # 如果还是不匹配，按比例分割
+                if len(translated_parts) != len(group):
+                    translated_parts = self._split_by_ratio(translated, len(group))
+                
+                # 分配结果
+                for i, (idx, original_text) in enumerate(group):
+                    if i < len(translated_parts):
+                        results[idx] = translated_parts[i].strip() or original_text
+                    else:
+                        results[idx] = original_text
+            
+            logger.info(f"✅ 长文本翻译完成")
+        
+        logger.info(f"✅ [云端智能] 翻译完成")
+        return results
+    
+    def _translate_batch_cloud_individual(self, texts, src_lang='zh', tgt_lang='en'):
+        """
+        云端翻译 - 逐条翻译模式（用于需要精确位置对应的场景，如PDF）
+        
+        确保每个输入文本都有一个对应的输出文本，不会因为分组合并导致数量不匹配
+        """
+        from concurrent.futures import ThreadPoolExecutor
+        import time
+        
+        client = AliTranslateClient()
+        
+        logger.info(f"📊 [云端逐条] 开始翻译 {len(texts)} 个文本片段...")
+        
+        results = [''] * len(texts)
+        
+        def translate_single(item):
+            idx, text = item
+            
+            if not text or not str(text).strip():
+                return idx, ''
+            
+            cleaned = str(text).strip()
+            max_retries = 3
+            
+            for attempt in range(max_retries):
+                try:
+                    result = client.translate(cleaned, source_lang=src_lang, target_lang=tgt_lang)
+                    if result.get('success'):
+                        return idx, result.get('translated_text', cleaned)
+                except Exception as e:
+                    if attempt < max_retries - 1:
+                        time.sleep(0.5)
+                    else:
+                        logger.warning(f"⚠️ 翻译失败: {cleaned[:20]}...")
+            
+            return idx, cleaned  # 失败返回原文
+        
+        # 并发翻译所有文本
+        logger.info(f"🔄 并发翻译中（10线程）...")
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            for idx, translated in executor.map(translate_single, enumerate(texts)):
+                results[idx] = translated
+                
+                # 显示进度
+                if (idx + 1) % 20 == 0 or (idx + 1) == len(texts):
+                    logger.info(f"  进度: {idx + 1}/{len(texts)}")
+        
+        logger.info(f"✅ [云端逐条] 翻译完成")
+        return results
+    
+    def _split_by_ratio(self, text, num_parts):
+        """按比例分割文本（备用方案）"""
+        if num_parts <= 1:
+            return [text]
+        
+        # 尝试按标点符号分割
+        sentences = re.split(r'[。.!?！？\n]+', text)
+        sentences = [s.strip() for s in sentences if s.strip()]
+        
+        if len(sentences) >= num_parts:
+            # 平均分配句子
+            result = []
+            sentences_per_part = len(sentences) // num_parts
+            
+            for i in range(num_parts):
+                start = i * sentences_per_part
+                end = start + sentences_per_part if i < num_parts - 1 else len(sentences)
+                part = ' '.join(sentences[start:end])
+                result.append(part)
+            
+            return result
+        
+        # 如果句子数不够，按长度分割
+        part_length = len(text) // num_parts
+        parts = []
+        
+        for i in range(num_parts):
+            start = i * part_length
+            end = start + part_length if i < num_parts - 1 else len(text)
+            parts.append(text[start:end].strip())
+        
+        return parts
+
     def load_model(self):
         """加载模型"""
         if self.model is not None:
@@ -182,6 +429,14 @@ class NLLBTranslator:
         src_code = self.get_lang_code(src_lang)
         tgt_code = self.get_lang_code(tgt_lang)
         
+        if USE_CLOUD_TRANSLATE:
+            client = AliTranslateClient()
+            result = client.translate(text, source_lang=src_lang, target_lang=tgt_lang)
+            if result.get('success'):
+                return result.get('translated_text', '')
+            else:
+                return text 
+
         # 设置源语言
         self.tokenizer.src_lang = src_code
         
@@ -210,20 +465,36 @@ class NLLBTranslator:
         
         return result
     
-    def translate_batch(self, texts, src_lang='zh', tgt_lang='en', batch_size=None):
-        """批量翻译"""
+    def translate_batch(self, texts, src_lang='zh', tgt_lang='en', batch_size=None, force_individual=False):
+        """批量翻译 - 优化云端翻译版
+        
+        Args:
+            texts: 要翻译的文本列表
+            src_lang: 源语言
+            tgt_lang: 目标语言
+            batch_size: 批次大小
+            force_individual: 强制逐条翻译（用于PDF等需要精确位置对应的场景）
+        """
         if not texts:
             return []
-        
+
         self.load_model()
-        
+
         if batch_size is None:
             batch_size = self.batch_size
-        
+
         src_code = self.get_lang_code(src_lang)
         tgt_code = self.get_lang_code(tgt_lang)
-        
-        # 设置源语言
+
+        # 云端翻译
+        if USE_CLOUD_TRANSLATE:
+            # 🔥 如果强制逐条翻译，使用简单模式
+            if force_individual:
+                return self._translate_batch_cloud_individual(texts, src_lang, tgt_lang)
+            else:
+                return self._translate_batch_cloud_smart(texts, src_lang, tgt_lang)
+
+        # 本地翻译，设置源语言
         self.tokenizer.src_lang = src_code
         
         results = []
@@ -259,8 +530,8 @@ class NLLBTranslator:
             )
             
             results.extend(batch_results)
-            
-            # 【新增】显示进度
+
+            # 显示进度
             if (i // batch_size + 1) % 10 == 0 or (i + batch_size) >= len(texts):
                 logger.info(f"  进度: {len(results)}/{len(texts)}")
         
