@@ -17,17 +17,25 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxext6 \
     libxrender-dev \
     curl \
+    wget \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
 
 # 安装Python依赖
-# PaddlePaddle CPU版本（GitHub Actions环境）
-RUN pip install --no-cache-dir paddlepaddle==2.6.0 -i https://pypi.tuna.tsinghua.edu.cn/simple
-# PaddleOCR
-RUN pip install --no-cache-dir paddleocr==2.7.3 -i https://pypi.tuna.tsinghua.edu.cn/simple
-# 其他依赖
-RUN pip install --no-cache-dir -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+# 先升级pip和安装wheel
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel
+
+# 安装PaddlePaddle CPU版本（使用官方源更稳定）
+RUN pip install --no-cache-dir paddlepaddle==2.6.1 || \
+    pip install --no-cache-dir paddlepaddle || \
+    pip install --no-cache-dir paddlepaddle==2.5.2
+
+# 安装PaddleOCR
+RUN pip install --no-cache-dir paddleocr
+
+# 安装其他依赖
+RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
