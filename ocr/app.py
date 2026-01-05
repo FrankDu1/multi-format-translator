@@ -10,11 +10,9 @@ import os
 import re
 from datetime import datetime
 
-# ========== GPU配置 - 限制显存使用 ==========
-# 设置PaddlePaddle显存使用 (1GB = 12.5% on 8GB GPU)
-os.environ['FLAGS_fraction_of_gpu_memory_to_use'] = '0.125'  # 限制1GB
-os.environ['FLAGS_allocator_strategy'] = 'auto_growth'        # 按需增长
-os.environ['CUDA_VISIBLE_DEVICES'] = '0'                      # 使用GPU 0
+# ========== CPU模式配置 ==========
+# 强制使用CPU（服务器无GPU）
+os.environ['CUDA_VISIBLE_DEVICES'] = ''  # 禁用GPU
 
 # 配置日志
 logging.basicConfig(level=logging.INFO)
@@ -29,16 +27,15 @@ app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": ALLOWED_ORIGINS}})
 
 # 初始化OCR引擎
-logger.info("🚀 初始化PaddleOCR...")
+logger.info("🚀 初始化PaddleOCR (CPU模式)...")
 try:
     ocr = PaddleOCR(
-        use_doc_orientation_classify=False, 
-        use_doc_unwarping=False, 
-        use_textline_orientation=False,
+        use_angle_cls=True,
         lang='ch',              # 支持中英文
-        # 新版本PaddleOCR通过环境变量控制GPU和显存，不需要这些参数
+        use_gpu=False,          # 明确使用CPU
+        show_log=False
     )
-    logger.info("✅ PaddleOCR初始化完成 (GPU模式, 显存限制: 1GB)")
+    logger.info("✅ PaddleOCR初始化完成 (CPU模式)")
 except Exception as e:
     logger.error(f"❌ PaddleOCR初始化失败: {e}")
     raise
@@ -368,8 +365,8 @@ def health():
         'status': 'healthy',
         'ocr_available': True,
         'timestamp': datetime.now().isoformat(),
-        'version': '2.0.2',
-        'gpu_memory_limit': '1GB'
+        'version': '3.2.0',
+        'mode': 'CPU'
     })
 
 @app.route('/ocr', methods=['POST'])
@@ -513,5 +510,5 @@ if __name__ == '__main__':
     logger.info("  - GET  /health     : 健康检查")
     logger.info("  - POST /ocr        : OCR识别（返回原始结果）")
     logger.info("  - POST /ocr/parsed : OCR识别（返回解析结果，兼容旧版本）")
-    logger.info("💾 GPU显存限制: 1GB (通过环境变量控制)")
+    logger.info("� 运行模式: CPU (PaddlePaddle 3.2.0)")
     app.run(host=OCR_HOST, port=OCR_PORT, debug=False, threaded=True)

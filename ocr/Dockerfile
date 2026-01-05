@@ -26,13 +26,8 @@ COPY requirements.txt .
 # 先升级pip和安装wheel
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel
 
-# 安装PaddlePaddle CPU版本（使用官方源更稳定）
-RUN pip install --no-cache-dir paddlepaddle==2.6.1 || \
-    pip install --no-cache-dir paddlepaddle || \
-    pip install --no-cache-dir paddlepaddle==2.5.2
-
-# 安装PaddleOCR
-RUN pip install --no-cache-dir paddleocr
+# 安装PaddlePaddle 3.2.0 CPU版本（从官方源）
+RUN pip install --no-cache-dir paddlepaddle==3.2.0 -i https://www.paddlepaddle.org.cn/packages/stable/cpu/
 
 # 安装其他依赖
 RUN pip install --no-cache-dir -r requirements.txt
