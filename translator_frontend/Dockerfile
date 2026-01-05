@@ -7,14 +7,14 @@ LABEL description="Image Translator Frontend - Static Web App with .env support"
 RUN apk add --no-cache bash dos2unix
 
 # 复制前端文件到 Nginx 根目录
-COPY index_original.html /usr/share/nginx/html/index.html
+COPY index.html /usr/share/nginx/html/index.html
 COPY static /usr/share/nginx/html/static
 
 # 复制 Nginx 配置
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # 复制环境变量注入脚本并转换换行符
-COPY inject-env.sh /docker-entrypoint.d/40-inject-env.sh
+COPY docker-entrypoint.sh /docker-entrypoint.d/40-inject-env.sh
 RUN dos2unix /docker-entrypoint.d/40-inject-env.sh && \
     chmod +x /docker-entrypoint.d/40-inject-env.sh
 
