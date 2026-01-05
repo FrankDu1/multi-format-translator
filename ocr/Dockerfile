@@ -1,28 +1,38 @@
-# 使用官方PaddlePaddle镜像（阿里云环境可访问）
-#FROM ccr-2vdh3abv-pub.cnc.bj.baidubce.com/paddlepaddle/paddle:3.0.0-gpu-cuda11.8-cudnn8.9-trt8.6
-FROM crpi-ppdkw6cnzgorx75r.cn-hangzhou.personal.cr.aliyuncs.com/general_offerupup/paddlegpucuda11.8cudnn8.9trt8.6:latest
+# 使用Python官方镜像（与其他服务保持一致）
+# 可选：GPU版本使用 nvidia/cuda:11.8.0-cudnn8-runtime-ubuntu22.04
+FROM python:3.10-slim
 
 WORKDIR /app
 
-ENV PYTHONUNBUFFERED=1
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1
 
-# 安装系统依赖
-RUN apt-get update && apt-get install -y \
+# 安装系统依赖（PaddleOCR需要）
+RUN apt-get update && apt-get install -y --no-install-recommends \
     libgl1 \
     libglib2.0-0 \
+    libgomp1 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
 
 # 安装Python依赖
-RUN python -m pip install paddleocr
-RUN pip install --no-cache-dir -r requirements.txt
+# PaddlePaddle CPU版本（GitHub Actions环境）
+RUN pip install --no-cache-dir paddlepaddle==2.6.0 -i https://pypi.tuna.tsinghua.edu.cn/simple
+# PaddleOCR
+RUN pip install --no-cache-dir paddleocr==2.7.3 -i https://pypi.tuna.tsinghua.edu.cn/simple
+# 其他依赖
+RUN pip install --no-cache-dir -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 
 COPY . .
 
 RUN mkdir -p /var/log/ocr-service
 
-EXPOSE 29001
+EXPOSE 8899
 
 CMD ["python", "app.py"]
