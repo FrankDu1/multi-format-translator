@@ -1,0 +1,82 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# CI/CD
+.github
+
+# Documentation
+*.md
+docs/
+LICENSE
+CODE_OF_CONDUCT.md
+CONTRIBUTING.md
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Logs
+logs/
+*.log
+
+# Data
+uploads/
+archives/
+test_images/
+*.pdf
+*.pptx
+*.png
+*.jpg
+*.jpeg
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temp files
+tmp/
+temp/
+*.tmp
+*.bak
+
+# Node modules (if any)
+node_modules/
+package-lock.json
+
+# Docker
+docker-compose.yml
+docker-compose.*.yml
+Dockerfile
+.dockerignore
+
+# Scripts
+*.bat
+*.sh
+manage-services.*
+start-*.sh
+stop-*.sh
+
+# Environment
+.env
+.env.*
+!.env.example

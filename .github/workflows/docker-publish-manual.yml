@@ -1,0 +1,150 @@
+name: Manual Docker Publish
+
+on:
+  workflow_dispatch:  # 手动触发
+    inputs:
+      service:
+        description: '选择要构建的服务'
+        required: true
+        type: choice
+        options:
+          - all
+          - frontend
+          - api
+          - ocr
+          - inpaint
+      tag:
+        description: '镜像标签 (默认: latest)'
+        required: false
+        default: 'latest'
+      platforms:
+        description: '目标平台'
+        required: false
+        type: choice
+        default: 'linux/amd64'
+        options:
+          - linux/amd64
+          - linux/arm64
+          - linux/amd64,linux/arm64
+
+jobs:
+  build-single:
+    runs-on: ubuntu-latest
+    if: github.event.inputs.service != 'all'
+    
+    steps:
+      - name: 📥 Checkout代码
+        uses: actions/checkout@v4
+
+      - name: 🔧 设置Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 🔑 登录Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: 🏗️ 构建并推送
+        run: |
+          SERVICE="${{ github.event.inputs.service }}"
+          TAG="${{ github.event.inputs.tag }}"
+          PLATFORMS="${{ github.event.inputs.platforms }}"
+          
+          case $SERVICE in
+            frontend)
+              CONTEXT="./translator_frontend"
+              DOCKERFILE="./translator_frontend/Dockerfile"
+              IMAGE="translator-frontend"
+              ;;
+            api)
+              CONTEXT="./translator_api"
+              DOCKERFILE="./translator_api/Dockerfile"
+              IMAGE="translator-api"
+              ;;
+            ocr)
+              CONTEXT="./ocr"
+              DOCKERFILE="./ocr/Dockerfile"
+              IMAGE="translator-ocr"
+              ;;
+            inpaint)
+              CONTEXT="./inpaint"
+              DOCKERFILE="./inpaint/Dockerfile"
+              IMAGE="translator-inpaint"
+              ;;
+          esac
+          
+          docker buildx build \
+            --platform $PLATFORMS \
+            --file $DOCKERFILE \
+            --tag ${{ secrets.DOCKER_USERNAME }}/$IMAGE:$TAG \
+            --push \
+            $CONTEXT
+
+      - name: ✅ 完成
+        run: |
+          echo "✅ 镜像构建并推送成功！"
+          echo "🐳 镜像: ${{ secrets.DOCKER_USERNAME }}/translator-${{ github.event.inputs.service }}:${{ github.event.inputs.tag }}"
+          echo "📦 平台: ${{ github.event.inputs.platforms }}"
+
+  build-all:
+    runs-on: ubuntu-latest
+    if: github.event.inputs.service == 'all'
+    strategy:
+      matrix:
+        service: [frontend, api, ocr, inpaint]
+    
+    steps:
+      - name: 📥 Checkout代码
+        uses: actions/checkout@v4
+
+      - name: 🔧 设置Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 🔑 登录Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: 📝 设置变量
+        id: vars
+        run: |
+          case ${{ matrix.service }} in
+            frontend)
+              echo "context=./translator_frontend" >> $GITHUB_OUTPUT
+              echo "dockerfile=./translator_frontend/Dockerfile" >> $GITHUB_OUTPUT
+              echo "image=translator-frontend" >> $GITHUB_OUTPUT
+              ;;
+            api)
+              echo "context=./translator_api" >> $GITHUB_OUTPUT
+              echo "dockerfile=./translator_api/Dockerfile" >> $GITHUB_OUTPUT
+              echo "image=translator-api" >> $GITHUB_OUTPUT
+              ;;
+            ocr)
+              echo "context=./ocr" >> $GITHUB_OUTPUT
+              echo "dockerfile=./ocr/Dockerfile" >> $GITHUB_OUTPUT
+              echo "image=translator-ocr" >> $GITHUB_OUTPUT
+              ;;
+            inpaint)
+              echo "context=./inpaint" >> $GITHUB_OUTPUT
+              echo "dockerfile=./inpaint/Dockerfile" >> $GITHUB_OUTPUT
+              echo "image=translator-inpaint" >> $GITHUB_OUTPUT
+              ;;
+          esac
+
+      - name: 🏗️ 构建并推送 ${{ matrix.service }}
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ steps.vars.outputs.context }}
+          file: ${{ steps.vars.outputs.dockerfile }}
+          platforms: ${{ github.event.inputs.platforms }}
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/${{ steps.vars.outputs.image }}:${{ github.event.inputs.tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: ✅ ${{ matrix.service }} 完成
+        run: |
+          echo "✅ ${{ matrix.service }} 构建完成"
+          echo "🐳 镜像: ${{ secrets.DOCKER_USERNAME }}/${{ steps.vars.outputs.image }}:${{ github.event.inputs.tag }}"
