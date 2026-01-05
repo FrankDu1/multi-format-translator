@@ -1,26 +1,8 @@
 # 🚀 GitHub Actions Docker 快速配置
 
-## ⚡ 3步完成自动构建
+## ⚡ 2步完成自动构建（无需配置Secrets！）
 
-### 步骤1：配置Docker Hub Secrets
-
-进入GitHub仓库：**Settings → Secrets → Actions**
-
-添加2个secrets：
-
-```
-DOCKER_USERNAME = 你的Docker Hub用户名
-DOCKER_PASSWORD = 你的Docker Hub Access Token
-```
-
-**获取Docker Hub Token：**
-1. 登录 https://hub.docker.com/
-2. Account Settings → Security → New Access Token
-3. 复制Token（只显示一次！）
-
----
-
-### 步骤2：推送代码
+### 步骤1：推送代码
 
 ```bash
 # 提交workflow文件
@@ -29,9 +11,11 @@ git commit -m "ci: 添加Docker自动构建"
 git push origin main
 ```
 
+**说明：** 使用GitHub Container Registry (GHCR)，无需配置任何Secrets！
+
 ---
 
-### 步骤3：查看构建
+### 步骤2：查看构建
 
 访问：**GitHub仓库 → Actions**
 
@@ -72,11 +56,29 @@ git push origin v1.0.0
 ### 拉取镜像
 
 ```bash
-docker pull yourname/translator-frontend:latest
-docker pull yourname/translator-api:latest
-docker pull yourname/translator-ocr:latest
-docker pull yourname/translator-inpaint:latest
+docker pull ghcr.io/你的用户名/multi-format-translator/translator-frontend:latest
+docker pull ghcr.io/你的用户名/multi-format-translator/translator-api:latest
+docker pull ghcr.io/你的用户名/multi-format-translator/translator-ocr:latest
+docker pull ghcr.io/你的用户名/multi-format-translator/translator-inpaint:latest
 ```
+
+**注意：** 首次拉取需要登录GitHub Container Registry：
+
+```bash
+# 创建GitHub Personal Access Token (PAT)
+# Settings → Developer settings → Personal access tokens → Tokens (classic) → Generate new token
+# 勾选 read:packages 权限
+
+# 登录GHCR
+echo YOUR_PAT | docker login ghcr.io -u YOUR_USERNAME --password-stdin
+
+# 然后拉取镜像
+docker pull ghcr.io/你的用户名/multi-format-translator/translator-api:latest
+```
+
+**公开镜像（推荐）：**
+- 在GitHub仓库的 Packages 中，将镜像设置为 Public
+- 这样任何人都可以直接拉取，无需登录
 
 ### 启动服务
 
@@ -89,30 +91,38 @@ docker-compose up -d
 
 ## 📋 生成的镜像标签
 
-| 操作 | 镜像标签 |
-|------|---------|
-| Push到main | `latest`, `main` |
-| Push到develop | `develop` |
-| Tag v1.2.3 | `v1.2.3`, `1.2`, `1`, `latest` |
+| 操作 | 镜像地址 | 标签 |
+|------|---------|------|
+| Push到main | `ghcr.io/你的用户名/仓库名/translator-api` | `latest`, `main` |
+| Push到develop | `ghcr.io/你的用户名/仓库名/translator-api` | `develop` |
+| Tag v1.2.3 | `ghcr.io/你的用户名/仓库名/translator-api` | `v1.2.3`, `1.2`, `1`, `latest` |
 
 ---
 
 ## 🔍 故障排查
 
-### 认证失败
+### 权限问题
 
-✅ 检查Secrets是否正确配置  
-✅ 使用Access Token，不是密码
+如果看到 "permission denied" 错误，检查：
 
-### 构建失败
+✅ 工作流文件中添加了 `permissions` 配置：
+```yaml
+permissions:
+  contents: read
+  packages: write
+```
 
-✅ 查看Actions日志  
-✅ 检查Dockerfile是否有错误
+### 镜像拉取失败
 
-### 推送失败
+✅ 确认镜像已设置为 Public：
+1. 访问 GitHub 仓库
+2. 右侧找到 Packages
+3. 点击包名
+4. Package settings → Change visibility → Public
 
-✅ 检查Docker Hub配额  
-✅ 确认Token有写入权限
+### 查看构建日志
+
+✅ GitHub → Actions → 选择失败的workflow → 查看详细日志
 
 ---
 
@@ -120,8 +130,14 @@ docker-compose up -d
 
 现在每次push代码都会自动：
 - ✅ 构建Docker镜像
-- ✅ 推送到Docker Hub
+- ✅ 推送到GitHub Container Registry
 - ✅ 运行测试
 - ✅ 创建Release（如果是tag）
+
+**优势：**
+- 🆓 完全免费，无需Docker Hub账号
+- 🔒 与GitHub仓库权限集成
+- 🚀 无需配置额外的Secrets
+- 📦 无限制的公开镜像存储
 
 **详细文档：** 查看 `.github/DOCKER_SETUP.md`

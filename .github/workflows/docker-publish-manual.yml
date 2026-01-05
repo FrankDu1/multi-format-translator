@@ -27,9 +27,15 @@ on:
           - linux/arm64
           - linux/amd64,linux/arm64
 
+env:
+  REGISTRY: ghcr.io
+
 jobs:
   build-single:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     if: github.event.inputs.service != 'all'
     
     steps:
@@ -39,11 +45,12 @@ jobs:
       - name: 🔧 设置Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: 🔑 登录Docker Hub
+      - name: 🔑 登录GitHub Container Registry
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: 🏗️ 构建并推送
         run: |
@@ -77,18 +84,21 @@ jobs:
           docker buildx build \
             --platform $PLATFORMS \
             --file $DOCKERFILE \
-            --tag ${{ secrets.DOCKER_USERNAME }}/$IMAGE:$TAG \
+            --tag ${{ env.REGISTRY }}/${{ github.repository }}/$IMAGE:$TAG \
             --push \
             $CONTEXT
 
       - name: ✅ 完成
         run: |
           echo "✅ 镜像构建并推送成功！"
-          echo "🐳 镜像: ${{ secrets.DOCKER_USERNAME }}/translator-${{ github.event.inputs.service }}:${{ github.event.inputs.tag }}"
+          echo "🐳 镜像: ${{ env.REGISTRY }}/${{ github.repository }}/translator-${{ github.event.inputs.service }}:${{ github.event.inputs.tag }}"
           echo "📦 平台: ${{ github.event.inputs.platforms }}"
 
   build-all:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     if: github.event.inputs.service == 'all'
     strategy:
       matrix:
@@ -101,11 +111,12 @@ jobs:
       - name: 🔧 设置Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: 🔑 登录Docker Hub
+      - name: 🔑 登录GitHub Container Registry
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: 📝 设置变量
         id: vars
@@ -140,11 +151,11 @@ jobs:
           file: ${{ steps.vars.outputs.dockerfile }}
           platforms: ${{ github.event.inputs.platforms }}
           push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/${{ steps.vars.outputs.image }}:${{ github.event.inputs.tag }}
+          tags: ${{ env.REGISTRY }}/${{ github.repository }}/${{ steps.vars.outputs.image }}:${{ github.event.inputs.tag }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: ✅ ${{ matrix.service }} 完成
         run: |
           echo "✅ ${{ matrix.service }} 构建完成"
-          echo "🐳 镜像: ${{ secrets.DOCKER_USERNAME }}/${{ steps.vars.outputs.image }}:${{ github.event.inputs.tag }}"
+          echo "🐳 镜像: ${{ env.REGISTRY }}/${{ github.repository }}/${{ steps.vars.outputs.image }}:${{ github.event.inputs.tag }}"
