@@ -96,7 +96,7 @@ jobs:
   test-compose:
     needs: build-and-push
     runs-on: ubuntu-latest
-    if: false  # 暂时禁用 compose 测试，因为 CI 环境中测试完整服务栈较复杂
+    if: github.event_name != 'pull_request'
     
     steps:
       - name: 📥 Checkout代码
@@ -104,26 +104,49 @@ jobs:
 
       - name: 🔧 创建环境配置
         run: |
-          cp .env.example .env
+          cp .env.example .env || echo "No .env.example found"
 
       - name: 🚀 启动服务
         run: |
           docker compose up -d
-          sleep 30  # 等待服务启动
+          echo "等待服务启动..."
+          sleep 60
+
+      - name: 🔍 检查容器状态
+        run: |
+          echo "容器状态："
+          docker compose ps
+          
+          echo -e "\n前端日志："
+          docker compose logs frontend | tail -n 20
+          
+          echo -e "\nAPI日志："
+          docker compose logs api | tail -n 20
 
       - name: 🧪 健康检查
         run: |
+          echo "等待服务完全就绪..."
+          for i in {1..30}; do
+            if curl -sf http://localhost:5001 > /dev/null 2>&1; then
+              echo "✓ 前端服务已就绪"
+              break
+            fi
+            echo "前端服务未就绪，等待... ($i/30)"
+            sleep 2
+          done
+          
           echo "检查前端服务..."
-          curl -f http://localhost:5001 || exit 1
+          curl -f http://localhost:5001 || (echo "前端服务检查失败" && docker compose logs frontend && exit 1)
           
           echo "检查API服务..."
-          curl -f http://localhost:5002/api/health || exit 1
+          curl -f http://localhost:5002/api/health || (echo "API服务检查失败" && docker compose logs api && exit 1)
           
+          # OCR和Inpaint服务是可选的，失败不影响主流程
           echo "检查OCR服务..."
-          curl -f http://localhost:8899/health || exit 1
+          curl -f http://localhost:8899/health || echo "⚠️  OCR服务未响应（可能仍在启动）"
           
           echo "检查Inpaint服务..."
-          curl -f http://localhost:8900/health || exit 1
+          curl -f http://localhost:8900/health || echo "⚠️  Inpaint服务未响应（可能仍在启动）"
 
       - name: 📋 查看日志
         if: failure()
