@@ -56,10 +56,10 @@ git push origin v1.0.0
 ### 拉取镜像
 
 ```bash
-docker pull ghcr.io/你的用户名/multi-format-translator/translator-frontend:latest
-docker pull ghcr.io/你的用户名/multi-format-translator/translator-api:latest
-docker pull ghcr.io/你的用户名/multi-format-translator/translator-ocr:latest
-docker pull ghcr.io/你的用户名/multi-format-translator/translator-inpaint:latest
+docker pull ghcr.io/你的用户名/translator-frontend:latest
+docker pull ghcr.io/你的用户名/translator-api:latest
+docker pull ghcr.io/你的用户名/translator-ocr:latest
+docker pull ghcr.io/你的用户名/translator-inpaint:latest
 ```
 
 **注意：** 首次拉取需要登录GitHub Container Registry：

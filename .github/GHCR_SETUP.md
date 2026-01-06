@@ -63,7 +63,7 @@ GitHub Actions会自动：
 **公开镜像（推荐）：**
 ```bash
 # 无需登录，直接拉取
-docker pull ghcr.io/你的用户名/multi-format-translator/translator-api:latest
+docker pull ghcr.io/你的用户名/translator-api:latest
 ```
 
 **私有镜像：**
@@ -76,7 +76,7 @@ docker pull ghcr.io/你的用户名/multi-format-translator/translator-api:lates
 echo YOUR_PAT | docker login ghcr.io -u YOUR_USERNAME --password-stdin
 
 # 3. 拉取镜像
-docker pull ghcr.io/你的用户名/multi-format-translator/translator-api:latest
+docker pull ghcr.io/你的用户名/translator-api:latest
 ```
 
 ## 🐳 更新docker-compose.yml
@@ -275,13 +275,13 @@ concurrency:
 
 ```bash
 # 拉取镜像
-docker pull ghcr.io/你的用户名/仓库名/服务名:latest
+docker pull ghcr.io/你的用户名/服务名:latest
 
 # 登录GHCR（如果是私有）
 echo YOUR_PAT | docker login ghcr.io -u YOUR_USERNAME --password-stdin
 
 # 启动服务
-docker-compose -f docker-compose.ghcr.yml up -d
+docker compose -f docker-compose.ghcr.yml up -d
 
 # 查看日志
 docker-compose logs -f

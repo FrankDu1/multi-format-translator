@@ -159,22 +159,6 @@ jobs:
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: context.issue.number,
-                body: `👋 Welcome @${creator}! Thank you for your first contribution to this project!
-                
-欢迎 @${creator}！感谢你对本项目的首次贡献！
-
-Please make sure you've:
-- ✅ Read the [Contributing Guide](CONTRIBUTING.md)
-- ✅ Followed the code style
-- ✅ Added tests if applicable
-- ✅ Updated documentation
-
-请确保你已经：
-- ✅ 阅读了[贡献指南](CONTRIBUTING.md)
-- ✅ 遵循了代码风格
-- ✅ 添加了测试（如适用）
-- ✅ 更新了文档
-
-A maintainer will review your PR soon. Thanks again! 🎉`
+                body: `👋 Welcome @${creator}! Thank you for your first contribution to this project!\n\n欢迎 @${creator}！感谢你对本项目的首次贡献！\n\nPlease make sure you've:\n- ✅ Read the [Contributing Guide](CONTRIBUTING.md)\n- ✅ Followed the code style\n- ✅ Added tests if applicable\n- ✅ Updated documentation\n\n请确保你已经：\n- ✅ 阅读了[贡献指南](CONTRIBUTING.md)\n- ✅ 遵循了代码风格\n- ✅ 添加了测试（如适用）\n- ✅ 更新了文档\n\nA maintainer will review your PR soon. Thanks again! 🎉`
               });
             }
