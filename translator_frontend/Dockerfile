@@ -1,4 +1,4 @@
-FROM docker.1ms.run/nginx:alpine
+FROM nginx:alpine
 
 LABEL maintainer="translator@example.com"
 LABEL description="Image Translator Frontend - Static Web App with .env support"
