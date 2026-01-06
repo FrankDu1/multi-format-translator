@@ -18,7 +18,7 @@ COPY docker-entrypoint.sh /docker-entrypoint.d/40-inject-env.sh
 RUN dos2unix /docker-entrypoint.d/40-inject-env.sh && \
     chmod +x /docker-entrypoint.d/40-inject-env.sh
 
-EXPOSE 5001
+EXPOSE 80
 
 # Nginx 会自动执行 /docker-entrypoint.d/ 中的脚本
 CMD ["nginx", "-g", "daemon off;"]
