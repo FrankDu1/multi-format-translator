@@ -108,7 +108,7 @@ jobs:
 
       - name: 🚀 启动服务
         run: |
-          docker-compose up -d
+          docker compose up -d
           sleep 30  # 等待服务启动
 
       - name: 🧪 健康检查
@@ -128,12 +128,12 @@ jobs:
       - name: 📋 查看日志
         if: failure()
         run: |
-          docker-compose logs
+          docker compose logs
 
       - name: 🧹 清理
         if: always()
         run: |
-          docker-compose down -v
+          docker compose down -v
 
   create-release:
     needs: test-compose
@@ -159,9 +159,9 @@ jobs:
             docker pull ghcr.io/${{ github.repository }}/translator-inpaint:${{ github.ref_name }}
             ```
             
-            或使用docker-compose：
+            或使用docker compose：
             ```bash
-            docker-compose up -d
+            docker compose up -d
             ```
             
             ## 📝 更新日志
