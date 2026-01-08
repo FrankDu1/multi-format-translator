@@ -71,12 +71,14 @@
                 if (metaTag) {
                     return metaTag.getAttribute('content');
                 }
-                // 默认本地开发配置
+                // 默认配置：根据访问域名/IP 自动计算
                 const hostname = window.location.hostname;
+                const protocol = window.location.protocol;
                 if (hostname === 'localhost' || hostname === '127.0.0.1') {
                     return 'http://localhost:5002/api';
                 } else {
-                    return window.location.origin + '/translator-api/api';
+                    // 生产环境：使用当前域名/IP + API 端口
+                    return protocol + '//' + hostname + ':5002/api';
                 }
             })()
         };
