@@ -49,7 +49,7 @@ services:
       - API_PORT=5002
       - OCR_SERVICE_URL=http://ocr:8899/ocr
       - INPAINT_SERVICE_URL=http://inpaint:8900/inpaint
-      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:5001}
+      - ALLOWED_ORIGINS=*
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://api.openai.com/v1}
       - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://localhost:11434}
@@ -58,6 +58,10 @@ services:
       - MAX_FILE_SIZE=${MAX_FILE_SIZE:-16777216}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - PRODUCTION_DOMAIN=${PRODUCTION_DOMAIN}
+      - USE_CLOUD_TRANSLATE=${USE_CLOUD_TRANSLATE:-true}
+      - ALI_ACCESS_KEY_ID=${ALI_ACCESS_KEY_ID}
+      - ALI_ACCESS_KEY_SECRET=${ALI_ACCESS_KEY_SECRET}
+      - QWEN_API_KEY=${QWEN_API_KEY}
     volumes:
       - ./translator_api/uploads:/app/uploads
       - ./translator_api/archives:/app/archives

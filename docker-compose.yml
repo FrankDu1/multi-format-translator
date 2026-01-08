@@ -64,6 +64,10 @@ services:
       - MAX_FILE_SIZE=${MAX_FILE_SIZE:-16777216}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - PRODUCTION_DOMAIN=${PRODUCTION_DOMAIN}
+      - USE_CLOUD_TRANSLATE=${USE_CLOUD_TRANSLATE:-true}
+      - ALI_ACCESS_KEY_ID=${ALI_ACCESS_KEY_ID}
+      - ALI_ACCESS_KEY_SECRET=${ALI_ACCESS_KEY_SECRET}
+      - QWEN_API_KEY=${QWEN_API_KEY}
     volumes:
       - ./translator_api/uploads:/app/uploads
       - ./translator_api/archives:/app/archives

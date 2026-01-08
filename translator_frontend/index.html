@@ -946,11 +946,8 @@
             // 🔥 统一 URL 拼接逻辑
             if (pdfUrl) {
                 if (pdfUrl.startsWith('http://') || pdfUrl.startsWith('https://')) {
-                    // 检查是否需要添加 translator-api 前缀
-                    if (pdfUrl.includes('offerupup.cn') && !pdfUrl.includes('translator-api')) {
-                        pdfUrl = pdfUrl.replace('/api/files/', '/translator-api/api/files/');
-                        console.log('🔧 修正后的URL:', pdfUrl);
-                    }
+                    // 已经是完整 URL，直接使用
+                    console.log('✓ 使用完整URL:', pdfUrl);
                 } else {
                     // 拼接完整 URL
                     const apiBaseUrl = window.ENV_CONFIG.getApiUrl();
@@ -1458,12 +1455,8 @@
             if (pptUrl) {
                 // 如果已经是完整 URL，直接使用
                 if (pptUrl.startsWith('http://') || pptUrl.startsWith('https://')) {
-                    // ✅ 如果是完整 URL，检查是否需要添加 translator-api 前缀
-                    if (pptUrl.includes('offerupup.cn') && !pptUrl.includes('translator-api')) {
-                        // 修复：在 /api 前面加上 /translator-api
-                        pptUrl = pptUrl.replace('/api/files/', '/translator-api/api/files/');
-                        console.log('🔧 修正后的URL:', pptUrl);
-                    }
+                    // 已经是完整 URL，直接使用
+                    console.log('✓ 使用完整PPT URL:', pptUrl);
                 } else {
                     // 如果是相对路径，拼接完整 URL
                     const apiBaseUrl = window.ENV_CONFIG.getApiUrl();
