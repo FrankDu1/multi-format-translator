@@ -7,7 +7,7 @@ services:
     container_name: translator-frontend
     restart: unless-stopped
     ports:
-      - "5001:5001"
+      - "5001:80"
     env_file:
       - .env
     networks:

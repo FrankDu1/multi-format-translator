@@ -1,0 +1,93 @@
+version: '3.8'
+
+services:
+  # OCR服务
+  ocr:
+    image: ghcr.io/frankdu1/translator-ocr:main
+    container_name: translator-ocr
+    ports:
+      - "${OCR_PORT:-8899}:8899"
+    environment:
+      - PYTHONIOENCODING=utf-8
+      - OCR_HOST=0.0.0.0
+      - OCR_PORT=8899
+      - ALLOWED_ORIGINS=*
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    volumes:
+      - ./logs:/app/logs
+    restart: unless-stopped
+    networks:
+      - translator-network
+
+  # Inpaint服务
+  inpaint:
+    image: ghcr.io/frankdu1/translator-inpaint:main
+    container_name: translator-inpaint
+    ports:
+      - "${INPAINT_PORT:-8900}:8900"
+    environment:
+      - PYTHONIOENCODING=utf-8
+      - INPAINT_HOST=0.0.0.0
+      - INPAINT_PORT=8900
+      - ALLOWED_ORIGINS=*
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    volumes:
+      - ./logs:/app/logs
+    restart: unless-stopped
+    networks:
+      - translator-network
+
+  # API服务
+  api:
+    image: ghcr.io/frankdu1/translator-api:main
+    container_name: translator-api
+    ports:
+      - "${API_PORT:-5002}:5002"
+    environment:
+      - PYTHONIOENCODING=utf-8
+      - API_HOST=0.0.0.0
+      - API_PORT=5002
+      - OCR_SERVICE_URL=http://ocr:8899/ocr
+      - INPAINT_SERVICE_URL=http://inpaint:8900/inpaint
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:5001}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://localhost:11434}
+      - MONITOR_USERNAME=${MONITOR_USERNAME:-admin}
+      - MONITOR_PASSWORD_HASH=${MONITOR_PASSWORD_HASH}
+      - MAX_FILE_SIZE=${MAX_FILE_SIZE:-16777216}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - PRODUCTION_DOMAIN=${PRODUCTION_DOMAIN}
+    volumes:
+      - ./translator_api/uploads:/app/uploads
+      - ./translator_api/archives:/app/archives
+      - ./logs:/app/logs
+    depends_on:
+      - ocr
+      - inpaint
+    restart: unless-stopped
+    networks:
+      - translator-network
+
+  # 前端服务
+  frontend:
+    image: ghcr.io/frankdu1/translator-frontend:main
+    container_name: translator-frontend
+    ports:
+      - "${FRONTEND_PORT:-5001}:80"
+    environment:
+      - API_BASE_URL=http://localhost:${API_PORT:-5002}/api
+    depends_on:
+      - api
+    restart: unless-stopped
+    networks:
+      - translator-network
+
+networks:
+  translator-network:
+    driver: bridge
+
+volumes:
+  logs:
+  uploads:
+  archives:

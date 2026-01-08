@@ -20,7 +20,8 @@ const ENV_CONFIG = {
         if (hostname === 'localhost' || hostname === '127.0.0.1') {
             return 'http://localhost:5002/api';
         } else {
-            return window.location.origin + '/translator-api/api';
+            // 生产环境：使用域名 + API 端口
+            return window.location.protocol + '//' + hostname + ':5002/api';
         }
     })(),
     APP_ENV: window.location.hostname === 'localhost' ? 'development' : 'production',

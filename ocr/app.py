@@ -30,10 +30,10 @@ CORS(app, resources={r"/*": {"origins": ALLOWED_ORIGINS}})
 logger.info("🚀 初始化PaddleOCR (CPU模式)...")
 try:
     ocr = PaddleOCR(
-        use_angle_cls=True,
-        lang='ch',              # 支持中英文
-        use_gpu=False,          # 明确使用CPU
-        show_log=False
+        use_textline_orientation=True,  # 替代 use_angle_cls
+        lang='ch'                       # 支持中英文
+        # PaddleOCR 3.2.0 已移除 use_gpu 和 show_log 参数
+        # CPU/GPU 通过环境变量 CUDA_VISIBLE_DEVICES 控制
     )
     logger.info("✅ PaddleOCR初始化完成 (CPU模式)")
 except Exception as e:
