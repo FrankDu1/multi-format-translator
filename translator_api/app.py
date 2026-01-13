@@ -63,22 +63,49 @@ except Exception as e:
 
 app = Flask(__name__)
 
-# CORS 配置（使用配置文件）
-# 如果 ALLOWED_ORIGINS 是 ['*']，则允许所有来源
+# ========== CORS 配置（最佳实践）==========
+try:
+    from config import CORS_MAX_AGE, CORS_ALLOW_CREDENTIALS
+except ImportError:
+    CORS_MAX_AGE = 3600
+    CORS_ALLOW_CREDENTIALS = False
+
 if ALLOWED_ORIGINS == ['*']:
+    # 通配符模式（开发/测试）
     CORS(app, 
-         resources={r"/*": {
+         resources={r"/api/*": {  # 只对 API 路径启用
              "origins": "*",
              "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-             "allow_headers": ["Content-Type", "Authorization"],
-             "expose_headers": ["Content-Type"],
-             "max_age": 3600
-         }}, 
-         supports_credentials=False)
-    app_logger.info("✓ CORS 已启用（允许所有来源）")
+             "allow_headers": [
+                 "Content-Type", 
+                 "Authorization",
+                 "X-Requested-With",
+                 "Accept",
+                 "Origin"
+             ],
+             "expose_headers": ["Content-Type", "Content-Length"],
+             "max_age": CORS_MAX_AGE,
+             "supports_credentials": False  # * 模式不支持 credentials
+         }})
+    app_logger.info("✓ CORS 已启用（通配符模式 - 仅用于开发）")
 else:
-    CORS(app, origins=ALLOWED_ORIGINS, supports_credentials=True)
-    app_logger.info(f"✓ CORS 已启用（允许来源: {ALLOWED_ORIGINS}）")
+    # 明确源模式（生产）
+    CORS(app,
+         resources={r"/api/*": {
+             "origins": ALLOWED_ORIGINS,
+             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+             "allow_headers": [
+                 "Content-Type",
+                 "Authorization", 
+                 "X-Requested-With",
+                 "Accept",
+                 "Origin"
+             ],
+             "expose_headers": ["Content-Type", "Content-Length"],
+             "max_age": CORS_MAX_AGE,
+             "supports_credentials": CORS_ALLOW_CREDENTIALS
+         }})
+    app_logger.info(f"✓ CORS 已启用（允许来源: {', '.join(ALLOWED_ORIGINS[:3])}{'...' if len(ALLOWED_ORIGINS) > 3 else ''}）")
 
 # 🔥 新增：使用日志目录配置
 USAGE_LOG_FOLDER = os.path.join(LOG_FOLDER, "usage")

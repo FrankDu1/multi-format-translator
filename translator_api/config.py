@@ -31,17 +31,39 @@ OCR_SERVICE_URL = os.getenv('OCR_SERVICE_URL', f'http://{OCR_HOST}:{OCR_PORT}/oc
 INPAINT_SERVICE_URL = os.getenv('INPAINT_SERVICE_URL', f'http://{INPAINT_HOST}:{INPAINT_PORT}/inpaint')
 USE_INPAINT = os.getenv('USE_INPAINT', 'True').lower() == 'true'
 
-# CORS 允许的源（支持 Docker/IP 访问）
-# 如果设置为 "*"，则允许所有来源（适合开发/测试环境）
-ALLOWED_ORIGINS_STR = os.getenv('ALLOWED_ORIGINS', '*')
-if ALLOWED_ORIGINS_STR == '*':
-    ALLOWED_ORIGINS = ['*']  # 允许所有来源
+# ========== CORS 配置（最佳实践）==========
+# 环境判断
+APP_ENV = os.getenv('APP_ENV', 'development')  # development/production
+
+if APP_ENV == 'production':
+    # 🔒 生产环境：明确指定允许的源（安全）
+    ALLOWED_ORIGINS_STR = os.getenv('ALLOWED_ORIGINS', '')
+    if not ALLOWED_ORIGINS_STR:
+        # 如果未配置，使用常见的生产 URL
+        ALLOWED_ORIGINS = [
+            'https://offerupup.cn',
+            'https://www.offerupup.cn',
+            'http://offerupup.cn',
+            'http://www.offerupup.cn'
+        ]
+    elif ALLOWED_ORIGINS_STR == '*':
+        # 生产环境警告但允许（不推荐）
+        ALLOWED_ORIGINS = ['*']
+        import logging
+        logging.warning("⚠️ 生产环境使用 CORS=* 不安全！建议指定具体域名")
+    else:
+        ALLOWED_ORIGINS = [origin.strip() for origin in ALLOWED_ORIGINS_STR.split(',')]
 else:
-    ALLOWED_ORIGINS = [origin.strip() for origin in ALLOWED_ORIGINS_STR.split(',')]
-    
-# 额外添加生产 URL（如果配置了）
-if os.getenv('PRODUCTION_URL') and ALLOWED_ORIGINS != ['*']:
-    ALLOWED_ORIGINS.append(os.getenv('PRODUCTION_URL'))
+    # 🔓 开发/测试环境：宽松配置
+    ALLOWED_ORIGINS_STR = os.getenv('ALLOWED_ORIGINS', '*')
+    if ALLOWED_ORIGINS_STR == '*':
+        ALLOWED_ORIGINS = ['*']
+    else:
+        ALLOWED_ORIGINS = [origin.strip() for origin in ALLOWED_ORIGINS_STR.split(',')]
+
+# CORS 其他配置
+CORS_MAX_AGE = int(os.getenv('CORS_MAX_AGE', '3600'))  # 预检缓存时间（秒）
+CORS_ALLOW_CREDENTIALS = os.getenv('CORS_ALLOW_CREDENTIALS', 'false').lower() == 'true'
 
 # 监控认证
 MONITOR_USERNAME = os.getenv('MONITOR_USERNAME', 'admin')
