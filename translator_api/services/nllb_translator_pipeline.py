@@ -381,13 +381,22 @@ class NLLBTranslator:
         return parts
 
     def load_model(self):
-        """加载模型"""
+        """加载模型（仅本地模式）"""
+        # 云翻译模式下不加载模型
+        if USE_CLOUD_TRANSLATE:
+            logger.info("ℹ️ 云翻译模式，跳过模型加载")
+            return
+            
         if self.model is not None:
             return
         
         logger.info(f"📦 加载模型: {self.model_name}...")
         
         try:
+            # 确保 transformers 已导入（本地模式）
+            from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+            import torch
+            
             # 加载tokenizer
             self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
             
@@ -438,18 +447,21 @@ class NLLBTranslator:
         if not text or not text.strip():
             return ""
         
-        self.load_model()
-        
-        src_code = self.get_lang_code(src_lang)
-        tgt_code = self.get_lang_code(tgt_lang)
-        
+        # 云翻译模式
         if USE_CLOUD_TRANSLATE:
             client = AliTranslateClient()
             result = client.translate(text, source_lang=src_lang, target_lang=tgt_lang)
             if result.get('success'):
                 return result.get('translated_text', '')
             else:
-                return text 
+                return text
+        
+        # 本地模式
+        import torch  # 仅本地模式导入
+        self.load_model()
+        
+        src_code = self.get_lang_code(src_lang)
+        tgt_code = self.get_lang_code(tgt_lang) 
 
         # 设置源语言
         self.tokenizer.src_lang = src_code
@@ -492,14 +504,6 @@ class NLLBTranslator:
         if not texts:
             return []
 
-        self.load_model()
-
-        if batch_size is None:
-            batch_size = self.batch_size
-
-        src_code = self.get_lang_code(src_lang)
-        tgt_code = self.get_lang_code(tgt_lang)
-
         # 云端翻译
         if USE_CLOUD_TRANSLATE:
             # 🔥 如果强制逐条翻译，使用简单模式
@@ -507,6 +511,16 @@ class NLLBTranslator:
                 return self._translate_batch_cloud_individual(texts, src_lang, tgt_lang)
             else:
                 return self._translate_batch_cloud_smart(texts, src_lang, tgt_lang)
+
+        # 本地翻译
+        import torch  # 仅本地模式导入
+        self.load_model()
+
+        if batch_size is None:
+            batch_size = self.batch_size
+
+        src_code = self.get_lang_code(src_lang)
+        tgt_code = self.get_lang_code(tgt_lang)
 
         # 本地翻译，设置源语言
         self.tokenizer.src_lang = src_code

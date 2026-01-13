@@ -66,7 +66,15 @@ app = Flask(__name__)
 # CORS 配置（使用配置文件）
 # 如果 ALLOWED_ORIGINS 是 ['*']，则允许所有来源
 if ALLOWED_ORIGINS == ['*']:
-    CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=False)
+    CORS(app, 
+         resources={r"/*": {
+             "origins": "*",
+             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+             "allow_headers": ["Content-Type", "Authorization"],
+             "expose_headers": ["Content-Type"],
+             "max_age": 3600
+         }}, 
+         supports_credentials=False)
     app_logger.info("✓ CORS 已启用（允许所有来源）")
 else:
     CORS(app, origins=ALLOWED_ORIGINS, supports_credentials=True)
