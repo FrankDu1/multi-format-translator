@@ -6,6 +6,8 @@ Some PyTorch builds expose `_register_pytree_node` but not the name
 
 This module attempts to add a backward-compatible alias at import time.
 Import this module before importing `transformers` in any file.
+
+If torch is not installed (e.g., using cloud translation), this shim does nothing.
 """
 
 try:
@@ -20,6 +22,9 @@ try:
             except Exception:
                 # If assignment fails for any reason, don't crash the import.
                 pass
+except ImportError:
+    # torch not installed (e.g., cloud translation mode) - that's fine
+    pass
 except Exception:
-    # If torch isn't available or something else goes wrong, silence the shim.
+    # If something else goes wrong, silence the shim.
     pass

@@ -1,12 +1,23 @@
 """
 文本翻译服务
 使用 NLLB 模型进行纯文本翻译
+
+注意：需要安装 torch 和 transformers
+如果使用云翻译模式，此模块不会被使用
 """
 
-from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
-import torch
+import os
 from logger_config import app_logger
 import re
+
+# 条件导入 torch 和 transformers
+try:
+    from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+    import torch
+    TORCH_AVAILABLE = True
+except ImportError:
+    TORCH_AVAILABLE = False
+    app_logger.warning("⚠️ torch/transformers 不可用，文本翻译需要云翻译模式")
 
 # 全局模型缓存
 _model = None

@@ -5,9 +5,7 @@ NLLB (No Language Left Behind) 翻译服务
 
 import os
 import logging
-import torch
 import re
-from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 from dotenv import load_dotenv
 load_dotenv()
 from services.ali_translate_client import AliTranslateClient
@@ -17,6 +15,18 @@ import concurrent.futures
 USE_CLOUD_TRANSLATE = os.getenv('USE_CLOUD_TRANSLATE', 'false').lower() == 'true'
 app_logger.info(f"[启动] USE_CLOUD_TRANSLATE 环境变量: {os.getenv('USE_CLOUD_TRANSLATE')}")
 app_logger.info(f"[启动] USE_CLOUD_TRANSLATE 解析结果: {USE_CLOUD_TRANSLATE}")
+
+# 🔥 条件导入：只在需要本地模型时才导入 torch
+if not USE_CLOUD_TRANSLATE:
+    try:
+        import torch
+        from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+        app_logger.info("✓ 本地模型依赖已加载 (torch, transformers)")
+    except ImportError as e:
+        app_logger.error(f"❌ 本地模型依赖缺失: {e}")
+        app_logger.error("请安装: pip install torch transformers sentencepiece")
+else:
+    app_logger.info("ℹ️ 使用云翻译模式，跳过本地模型依赖")
 
 # 【新增】导入配置
 try:
@@ -76,18 +86,22 @@ class NLLBTranslator:
         self.model_name = model_name
         
         # 【修改】设置PyTorch CUDA内存分配器
-        if PYTORCH_CUDA_ALLOC_CONF:
+        if not USE_CLOUD_TRANSLATE and PYTORCH_CUDA_ALLOC_CONF:
             os.environ['PYTORCH_CUDA_ALLOC_CONF'] = PYTORCH_CUDA_ALLOC_CONF
             logger.info(f"✓ 设置 PYTORCH_CUDA_ALLOC_CONF: {PYTORCH_CUDA_ALLOC_CONF}")
         
-        # 【修改】根据配置选择设备
-        if USE_GPU and torch.cuda.is_available():
-            self.device = f"cuda:{GPU_DEVICE_ID}"
-            logger.info(f"✓ 使用 GPU: {torch.cuda.get_device_name(GPU_DEVICE_ID)}")
-            logger.info(f"✓ GPU 显存限制: {GPU_MEMORY_FRACTION * 100}%")
+        # 【修改】根据配置选择设备（仅本地模式）
+        if not USE_CLOUD_TRANSLATE:
+            import torch  # 仅在本地模式导入
+            if USE_GPU and torch.cuda.is_available():
+                self.device = f"cuda:{GPU_DEVICE_ID}"
+                logger.info(f"✓ 使用 GPU: {torch.cuda.get_device_name(GPU_DEVICE_ID)}")
+                logger.info(f"✓ GPU 显存限制: {GPU_MEMORY_FRACTION * 100}%")
+            else:
+                self.device = "cpu"
+                logger.info("✓ 使用 CPU")
         else:
-            self.device = "cpu"
-            logger.info("✓ 使用 CPU")
+            self.device = None  # 云翻译模式不需要设备
         
         self.tokenizer = None
         self.model = None

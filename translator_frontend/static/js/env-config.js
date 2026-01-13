@@ -56,8 +56,15 @@ const ENV_CONFIG = {
         });
     },
     
-    // 从 .env 文件加载配置（可选）
+    // 从 .env 文件加载配置（仅本地开发环境）
     async loadEnvFile() {
+        // 生产环境不加载 .env 文件（避免不必要的请求和安全风险）
+        const hostname = window.location.hostname;
+        if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
+            console.log('ℹ️ 生产环境，跳过 .env 文件加载');
+            return false;
+        }
+        
         try {
             console.log('🔍 尝试加载 .env 文件...');
             const response = await fetch('/.env', { cache: 'no-cache' });

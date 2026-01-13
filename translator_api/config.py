@@ -31,10 +31,16 @@ OCR_SERVICE_URL = os.getenv('OCR_SERVICE_URL', f'http://{OCR_HOST}:{OCR_PORT}/oc
 INPAINT_SERVICE_URL = os.getenv('INPAINT_SERVICE_URL', f'http://{INPAINT_HOST}:{INPAINT_PORT}/inpaint')
 USE_INPAINT = os.getenv('USE_INPAINT', 'True').lower() == 'true'
 
-# CORS 允许的源（本地 + 生产）
-ALLOWED_ORIGINS_STR = os.getenv('ALLOWED_ORIGINS', 'http://localhost:5001,http://127.0.0.1:5001')
-ALLOWED_ORIGINS = [origin.strip() for origin in ALLOWED_ORIGINS_STR.split(',')]
-if os.getenv('PRODUCTION_URL'):
+# CORS 允许的源（支持 Docker/IP 访问）
+# 如果设置为 "*"，则允许所有来源（适合开发/测试环境）
+ALLOWED_ORIGINS_STR = os.getenv('ALLOWED_ORIGINS', '*')
+if ALLOWED_ORIGINS_STR == '*':
+    ALLOWED_ORIGINS = ['*']  # 允许所有来源
+else:
+    ALLOWED_ORIGINS = [origin.strip() for origin in ALLOWED_ORIGINS_STR.split(',')]
+    
+# 额外添加生产 URL（如果配置了）
+if os.getenv('PRODUCTION_URL') and ALLOWED_ORIGINS != ['*']:
     ALLOWED_ORIGINS.append(os.getenv('PRODUCTION_URL'))
 
 # 监控认证

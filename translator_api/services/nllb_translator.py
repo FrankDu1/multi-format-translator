@@ -1,13 +1,22 @@
 """
 NLLB (No Language Left Behind) 翻译服务
 使用Meta的NLLB模型进行高质量多语言翻译
+
+注意：需要安装 torch 和 transformers
+如果使用云翻译模式，此模块不会被使用
 """
 
 import os
-# Compatibility shim: ensure torch.utils._pytree has register_pytree_node if possible
-from services.torch_compat import *  # noqa: F401,F403
-from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
-import torch
+
+# 条件导入 torch 和 transformers
+try:
+    # Compatibility shim: ensure torch.utils._pytree has register_pytree_node if possible
+    from services.torch_compat import *  # noqa: F401,F403
+    from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+    import torch
+    TORCH_AVAILABLE = True
+except ImportError:
+    TORCH_AVAILABLE = False
 
 class NLLBTranslator:
     """NLLB翻译器"""

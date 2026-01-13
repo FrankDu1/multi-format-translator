@@ -64,7 +64,13 @@ except Exception as e:
 app = Flask(__name__)
 
 # CORS 配置（使用配置文件）
-CORS(app, origins=ALLOWED_ORIGINS, supports_credentials=True)
+# 如果 ALLOWED_ORIGINS 是 ['*']，则允许所有来源
+if ALLOWED_ORIGINS == ['*']:
+    CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=False)
+    app_logger.info("✓ CORS 已启用（允许所有来源）")
+else:
+    CORS(app, origins=ALLOWED_ORIGINS, supports_credentials=True)
+    app_logger.info(f"✓ CORS 已启用（允许来源: {ALLOWED_ORIGINS}）")
 
 # 🔥 新增：使用日志目录配置
 USAGE_LOG_FOLDER = os.path.join(LOG_FOLDER, "usage")

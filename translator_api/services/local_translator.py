@@ -1,15 +1,25 @@
 """
 本地翻译服务 - 使用 Hugging Face MarianMT 模型
 支持离线翻译，无需外部API
+
+注意：需要安装 torch 和 transformers
+如果使用云翻译模式，此模块不会被使用
 """
 
 import os
-# Compatibility shim: ensure torch.utils._pytree has register_pytree_node if possible
-from services.torch_compat import *  # noqa: F401,F403
-from transformers import MarianMTModel, MarianTokenizer
-import torch
 from typing import List, Optional
 import logging
+
+# 条件导入 torch 和 transformers
+try:
+    # Compatibility shim: ensure torch.utils._pytree has register_pytree_node if possible
+    from services.torch_compat import *  # noqa: F401,F403
+    from transformers import MarianMTModel, MarianTokenizer
+    import torch
+    TORCH_AVAILABLE = True
+except ImportError:
+    TORCH_AVAILABLE = False
+    logging.warning("⚠️ torch/transformers 不可用，本地翻译需要云翻译模式")
 
 # 配置国内镜像源（适用于中国大陆）
 os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
