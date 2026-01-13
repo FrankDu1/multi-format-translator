@@ -17,11 +17,22 @@ const ENV_CONFIG = {
         }
         
         const hostname = window.location.hostname;
+        const protocol = window.location.protocol;
+        
+        // 本地开发环境
         if (hostname === 'localhost' || hostname === '127.0.0.1') {
             return 'http://localhost:5002/api';
+        }
+        
+        // 判断是否是 IP 地址（Docker 直连模式）
+        const isIP = /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname);
+        
+        if (isIP) {
+            // Docker 直连：使用 IP + 5002 端口
+            return protocol + '//' + hostname + ':5002/api';
         } else {
-            // 生产环境：使用域名 + API 端口
-            return window.location.protocol + '//' + hostname + ':5002/api';
+            // 生产环境（域名 + nginx）：使用相对路径
+            return '/translator-api/api';
         }
     })(),
     APP_ENV: window.location.hostname === 'localhost' ? 'development' : 'production',
