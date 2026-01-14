@@ -996,28 +996,21 @@
                 downloadBtn.onclick = function() {
                     console.log('📥 开始下载PDF:', window.translatedPDFUrl);
                     
-                    fetch(window.translatedPDFUrl)
-                        .then(response => {
-                            if (!response.ok) {
-                                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                            }
-                            return response.blob();
-                        })
-                        .then(blob => {
-                            const url = URL.createObjectURL(blob);
-                            const link = document.createElement('a');
-                            link.href = url;
-                            link.download = window.translatedPDFFilename;
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
-                            URL.revokeObjectURL(url);
-                            console.log('✅ PDF下载成功');
-                        })
-                        .catch(error => {
-                            console.error('❌ PDF下载失败:', error);
-                            alert('下载失败: ' + error.message + '\n请检查网络连接或联系管理员');
-                        });
+                    // ✅ 优化：直接下载，不使用 blob（更快）
+                    const link = document.createElement('a');
+                    link.href = window.translatedPDFUrl;
+                    link.download = window.translatedPDFFilename;
+                    link.target = '_blank';  // 新标签页打开（备用）
+                    
+                    // 添加到 DOM 并触发点击
+                    document.body.appendChild(link);
+                    link.click();
+                    
+                    // 短暂延迟后移除（确保下载开始）
+                    setTimeout(() => {
+                        document.body.removeChild(link);
+                        console.log('✅ PDF下载已开始');
+                    }, 100);
                 };
             }
             
@@ -1275,23 +1268,20 @@
                 return;
             }
             
-            // 🔥 使用 fetch 下载，确保URL正确
-            const downloadUrl = document.getElementById('translatedImage').src;  // ← 直接用img标签的src
+            // ✅ 优化：直接下载，不使用 blob（更快）
+            const downloadUrl = document.getElementById('translatedImage').src;
+            const link = document.createElement('a');
+            link.href = downloadUrl;
+            link.download = window.translatedImageFilename || 'translated_image.png';
+            link.target = '_blank';
             
-            fetch(downloadUrl)
-                .then(response => response.blob())
-                .then(blob => {
-                    const url = URL.createObjectURL(blob);
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.download = window.translatedImageFilename || 'translated_image.png';
-                    link.click();
-                    URL.revokeObjectURL(url);
-                })
-                .catch(error => {
-                    console.error('下载失败:', error);
-                    alert('下载失败，请右键图片选择"图片另存为"');
-                });
+            document.body.appendChild(link);
+            link.click();
+            
+            setTimeout(() => {
+                document.body.removeChild(link);
+                console.log('✅ 图片下载已开始');
+            }, 100);
         }
         
         // 重置图片翻译
@@ -1532,29 +1522,19 @@
             
             console.log('📥 开始下载PPT:', window.translatedPPTUrl);
             
-            // 🔥 使用 fetch 下载，确保URL正确（与图片下载逻辑完全一致）
-            const downloadUrl = window.translatedPPTUrl;
+            // ✅ 优化：直接下载，不使用 blob（更快）
+            const link = document.createElement('a');
+            link.href = window.translatedPPTUrl;
+            link.download = window.translatedPPTFilename || 'translated.pptx';
+            link.target = '_blank';
             
-            fetch(downloadUrl)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                    }
-                    return response.blob();
-                })
-                .then(blob => {
-                    const url = URL.createObjectURL(blob);
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.download = window.translatedPPTFilename || 'translated.pptx';
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    URL.revokeObjectURL(url);
-                    console.log('✅ PPT下载成功');
-                })
-                .catch(error => {
-                    console.error('❌ PPT下载失败:', error);
+            document.body.appendChild(link);
+            link.click();
+            
+            setTimeout(() => {
+                document.body.removeChild(link);
+                console.log('✅ PPT下载已开始');
+            }, 100);
                     alert('下载失败: ' + error.message + '\n请检查网络连接或联系管理员');
                 });
         }

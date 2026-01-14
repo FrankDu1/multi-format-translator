@@ -625,12 +625,14 @@ def translate_pdf():
                 tgt_lang,
                 enable_summary
             )
-        except Exception as e:
-            # 如果复杂版本失败，尝试简单版本
+        except ImportError as e:
+            # 依赖缺失错误
+            error_msg = f"Missing dependency: {str(e)}"
+            api_logger.error(f"❌ {error_msg}", exc_info=True)
             elapsed = time.time() - start_time
             usage_record = create_usage_record(
                 request=request,
-                translation_type='pdf',  # 🔥 修正：应该是 'pdf' 而不是 'image'
+                translation_type='pdf',
                 file_info={
                     'source_lang': src_lang,
                     'target_lang': tgt_lang,
@@ -639,13 +641,40 @@ def translate_pdf():
                 },
                 processing_time=elapsed,
                 status='failed',
-                error_message=str(e),
+                error_message=error_msg,
                 enable_summary=enable_summary
             )
             log_usage(usage_record)
-            api_logger.warning(f"⚠️ Advanced PDF translation failed: {e}")
-            #translated_pdf_path = translate_pdf_simple(file_path, src_lang, tgt_lang)
-            raise e
+            return jsonify({
+                'success': False,
+                'error': 'PDF translation failed',
+                'details': error_msg
+            }), 500
+        except Exception as e:
+            # 其他错误
+            error_msg = str(e)
+            api_logger.error(f"❌ PDF translation error: {error_msg}", exc_info=True)
+            elapsed = time.time() - start_time
+            usage_record = create_usage_record(
+                request=request,
+                translation_type='pdf',
+                file_info={
+                    'source_lang': src_lang,
+                    'target_lang': tgt_lang,
+                    'file_name': file.filename,
+                    'file_size_kb': round(file_size, 2)
+                },
+                processing_time=elapsed,
+                status='failed',
+                error_message=error_msg,
+                enable_summary=enable_summary
+            )
+            log_usage(usage_record)
+            return jsonify({
+                'success': False,
+                'error': 'PDF translation failed',
+                'details': error_msg
+            }), 500
         
         elapsed = time.time() - start_time
         
@@ -1106,20 +1135,49 @@ def serve_file(filename):
     return jsonify({'error': 'File not found'}), 404
 
 
+# ========== 全局错误处理（支持 CORS）==========
+def add_cors_headers(response):
+    """为响应添加 CORS 头"""
+    origin = request.headers.get('Origin')
+    
+    if ALLOWED_ORIGINS == ['*']:
+        response.headers['Access-Control-Allow-Origin'] = '*'
+    elif origin and origin in ALLOWED_ORIGINS:
+        response.headers['Access-Control-Allow-Origin'] = origin
+    
+    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, Origin'
+    response.headers['Access-Control-Max-Age'] = str(CORS_MAX_AGE)
+    return response
+
 @app.errorhandler(413)
 def file_too_large(e):
-    return jsonify({'error': 'File too large'}), 413
-
+    response = jsonify({'error': 'File too large', 'max_size': f'{MAX_FILE_SIZE / 1024 / 1024}MB'})
+    return add_cors_headers(response), 413
 
 @app.errorhandler(404)
 def not_found(e):
-    return jsonify({'error': 'Endpoint not found'}), 404
-
+    response = jsonify({'error': 'Endpoint not found', 'path': request.path})
+    return add_cors_headers(response), 404
 
 @app.errorhandler(500)
 def internal_error(e):
-    api_logger.error(f"Internal error: {e}")
-    return jsonify({'error': 'Internal server error'}), 500
+    api_logger.error(f"Internal error: {e}", exc_info=True)
+    response = jsonify({
+        'error': 'Internal server error',
+        'details': str(e) if app.debug else 'Please check server logs'
+    })
+    return add_cors_headers(response), 500
+
+@app.errorhandler(Exception)
+def handle_exception(e):
+    """捕获所有未处理的异常"""
+    api_logger.error(f"Unhandled exception: {e}", exc_info=True)
+    response = jsonify({
+        'error': 'Internal server error',
+        'details': str(e) if app.debug else 'An unexpected error occurred'
+    })
+    return add_cors_headers(response), 500
 
 
 # ============= 监控仪表盘 API =============
