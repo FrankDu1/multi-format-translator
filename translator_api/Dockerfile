@@ -6,7 +6,7 @@ LABEL description="Image Translator API - Pure REST API with GPU"
 
 WORKDIR /app
 
-# 安装 Python 和系统依赖
+# 安装 Python 和系统依赖（包括中文字体）
 RUN apt-get update && apt-get install -y \
     python3.10 \
     python3-pip \
@@ -16,6 +16,12 @@ RUN apt-get update && apt-get install -y \
     libgl1-mesa-glx \
     libglib2.0-0 \
     curl \
+    fonts-noto-cjk \
+    fonts-noto-cjk-extra \
+    fonts-wqy-zenhei \
+    fonts-wqy-microhei \
+    fontconfig \
+    && fc-cache -fv \
     && rm -rf /var/lib/apt/lists/*
 
 # 创建缓存目录
