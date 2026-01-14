@@ -65,13 +65,17 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/${{ matrix.service.image }}
           tags: |
-            type=ref,event=branch
+            # 主分支推送 -> latest
+            type=raw,value=latest,enable={{is_default_branch}}
+            # 分支名（如 develop）
+            type=ref,event=branch,enable=${{ github.ref != 'refs/heads/main' }}
+            # PR 标签
             type=ref,event=pr
+            # 语义化版本标签（v1.2.3）
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-            type=sha,prefix={{branch}}-
-            type=raw,value=latest,enable={{is_default_branch}}
+            # commit hash（可选，用于精确回滚）
+            type=sha,prefix={{branch}}-,enable=${{ github.event_name != 'pull_request' }}
 
       - name: 🏗️ 构建并推送 ${{ matrix.service.name }}
         uses: docker/build-push-action@v5

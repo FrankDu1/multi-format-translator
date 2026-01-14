@@ -244,7 +244,7 @@
                         <i class="fas fa-file-pdf upload-icon"></i>
                         <h3 data-i18n="pdf_upload_title">上传PDF文档进行格式翻译</h3>
                         <p data-i18n="pdf_upload_subtitle">翻译后保持原文档格式和样式，专业级PDF翻译，自动检测语言。</p>
-                        <input type="file" id="pdfFileInput" accept=".pdf" style="display: none;" onchange="handlePdfFileChange(event)">
+                        <input type="file" id="pdfFileInput" accept=".pdf" style="display: none;">
                         <button class="btn btn-primary" onclick="document.getElementById('pdfFileInput').click()">
                             <i class="fas fa-file-pdf"></i> <span data-i18n="select_pdf">选择PDF文件</span>
                         </button>
@@ -272,10 +272,10 @@
 
                 <!-- 上传区域的按钮一行显示（示例） -->
                 <div class="pdf-upload-actions" style="display: flex; gap: 16px; margin-top: 24px;">
-                    <button class="btn btn-success" id="pdfTranslateBtn" onclick="translatePdfFile()">
+                    <button class="btn btn-success" id="pdfTranslateBtn">
                         <i class="fas fa-language"></i> <span data-i18n="start_translate">开始翻译</span>
                     </button>
-                    <button class="btn btn-secondary" id="clearPdfBtn" onclick="clearPdfFile()">
+                    <button class="btn btn-secondary" id="clearPdfBtn">
                         <i class="fas fa-times"></i> <span data-i18n="reselect">重新选择</span>
                     </button>
                 </div>
@@ -625,6 +625,29 @@
                 console.log('✅ 语言选择器联动逻辑已绑定');
             } else {
                 console.error('❌ 语言选择器未找到!');
+            }
+            
+            // 🔥 4. 绑定 PDF 文件选择事件监听器
+            const pdfFileInput = document.getElementById('pdfFileInput');
+            if (pdfFileInput) {
+                pdfFileInput.addEventListener('change', handlePdfFileChange);
+                console.log('✅ PDF 文件选择监听器已绑定');
+            } else {
+                console.warn('⚠️ pdfFileInput 元素不存在');
+            }
+            
+            // 🔥 5. 绑定 PDF 翻译和清除按钮事件监听器
+            const pdfTranslateBtn = document.getElementById('pdfTranslateBtn');
+            const clearPdfBtn = document.getElementById('clearPdfBtn');
+            
+            if (pdfTranslateBtn) {
+                pdfTranslateBtn.addEventListener('click', translatePdfFile);
+                console.log('✅ PDF 翻译按钮监听器已绑定');
+            }
+            
+            if (clearPdfBtn) {
+                clearPdfBtn.addEventListener('click', clearPdfFile);
+                console.log('✅ PDF 清除按钮监听器已绑定');
             }
         });
         
@@ -996,21 +1019,24 @@
                 downloadBtn.onclick = function() {
                     console.log('📥 开始下载PDF:', window.translatedPDFUrl);
                     
-                    // ✅ 优化：直接下载，不使用 blob（更快）
-                    const link = document.createElement('a');
-                    link.href = window.translatedPDFUrl;
-                    link.download = window.translatedPDFFilename;
-                    link.target = '_blank';  // 新标签页打开（备用）
-                    
-                    // 添加到 DOM 并触发点击
-                    document.body.appendChild(link);
-                    link.click();
-                    
-                    // 短暂延迟后移除（确保下载开始）
-                    setTimeout(() => {
-                        document.body.removeChild(link);
-                        console.log('✅ PDF下载已开始');
-                    }, 100);
+                    // 使用 fetch + blob 强制下载（避免浏览器打开）
+                    fetch(window.translatedPDFUrl)
+                        .then(response => response.blob())
+                        .then(blob => {
+                            const blobUrl = URL.createObjectURL(blob);
+                            const link = document.createElement('a');
+                            link.href = blobUrl;
+                            link.download = window.translatedPDFFilename;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                            URL.revokeObjectURL(blobUrl);
+                            console.log('✅ PDF下载已开始');
+                        })
+                        .catch(error => {
+                            console.error('❌ PDF下载失败:', error);
+                            alert('下载失败: ' + error.message);
+                        });
                 };
             }
             
@@ -1268,20 +1294,26 @@
                 return;
             }
             
-            // ✅ 优化：直接下载，不使用 blob（更快）
+            // 使用 fetch + blob 强制下载（避免浏览器打开）
             const downloadUrl = document.getElementById('translatedImage').src;
-            const link = document.createElement('a');
-            link.href = downloadUrl;
-            link.download = window.translatedImageFilename || 'translated_image.png';
-            link.target = '_blank';
             
-            document.body.appendChild(link);
-            link.click();
-            
-            setTimeout(() => {
-                document.body.removeChild(link);
-                console.log('✅ 图片下载已开始');
-            }, 100);
+            fetch(downloadUrl)
+                .then(response => response.blob())
+                .then(blob => {
+                    const blobUrl = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = blobUrl;
+                    link.download = window.translatedImageFilename || 'translated_image.png';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(blobUrl);
+                    console.log('✅ 图片下载已开始');
+                })
+                .catch(error => {
+                    console.error('❌ 图片下载失败:', error);
+                    alert('下载失败: ' + error.message);
+                });
         }
         
         // 重置图片翻译
@@ -1522,20 +1554,23 @@
             
             console.log('📥 开始下载PPT:', window.translatedPPTUrl);
             
-            // ✅ 优化：直接下载，不使用 blob（更快）
-            const link = document.createElement('a');
-            link.href = window.translatedPPTUrl;
-            link.download = window.translatedPPTFilename || 'translated.pptx';
-            link.target = '_blank';
-            
-            document.body.appendChild(link);
-            link.click();
-            
-            setTimeout(() => {
-                document.body.removeChild(link);
-                console.log('✅ PPT下载已开始');
-            }, 100);
-                    alert('下载失败: ' + error.message + '\n请检查网络连接或联系管理员');
+            // 使用 fetch + blob 强制下载（避免浏览器打开）
+            fetch(window.translatedPPTUrl)
+                .then(response => response.blob())
+                .then(blob => {
+                    const blobUrl = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = blobUrl;
+                    link.download = window.translatedPPTFilename || 'translated.pptx';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(blobUrl);
+                    console.log('✅ PPT下载已开始');
+                })
+                .catch(error => {
+                    console.error('❌ PPT下载失败:', error);
+                    alert('下载失败: ' + error.message);
                 });
         }
 
