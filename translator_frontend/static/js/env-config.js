@@ -8,118 +8,99 @@
  *   ENV_CONFIG.debug();
  */
 
-const ENV_CONFIG = {
-    // ✅ 立即可用的默认配置（同步）
-    API_BASE_URL: (() => {
-        // 检查是否在环境变量中配置了 API 地址
-        if (window.ENV && window.ENV.API_BASE_URL) {
-            return window.ENV.API_BASE_URL;
-        }
-        
-        const hostname = window.location.hostname;
-        const protocol = window.location.protocol;
-        
-        // 本地开发环境
-        if (hostname === 'localhost' || hostname === '127.0.0.1') {
-            return 'http://localhost:5002/api';
-        }
-        
-        // 判断是否是 IP 地址（Docker 直连模式）
-        const isIP = /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname);
-        
-        if (isIP) {
-            // Docker 直连：使用 IP + 5002 端口
-            return protocol + '//' + hostname + ':5002/api';
-        } else {
-            // 生产环境（域名 + nginx）：使用相对路径
-            return '/translator-api/api';
-        }
-    })(),
-    APP_ENV: window.location.hostname === 'localhost' ? 'development' : 'production',
-    VERSION: '3.0.0',
-    APP_NAME: 'Image Translator',
+// 环境配置管理
+const ENV_CONFIG = (() => {
+    const hostname = window.location.hostname;
+    const pathname = window.location.pathname;
     
-    // 异步初始化：尝试从 .env 文件加载（可选覆盖）
-    async init() {
-        console.log('📍 默认配置（根据域名）:', {
-            hostname: window.location.hostname,
-            API_BASE_URL: this.API_BASE_URL,
-            APP_ENV: this.APP_ENV
-        });
-        
-        await this.loadEnvFile();
-        
-        console.log('✅ 最终配置:', {
-            API_BASE_URL: this.API_BASE_URL,
-            APP_ENV: this.APP_ENV,
-            VERSION: this.VERSION
-        });
-    },
+    console.log('🔍 环境检测:', { hostname, pathname });
     
-    // 从 .env 文件加载配置（仅本地开发环境）
-    async loadEnvFile() {
-        // 生产环境不加载 .env 文件（避免不必要的请求和安全风险）
-        const hostname = window.location.hostname;
-        if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
-            console.log('ℹ️ 生产环境，跳过 .env 文件加载');
-            return false;
-        }
-        
-        try {
-            console.log('🔍 尝试加载 .env 文件...');
-            const response = await fetch('/.env', { cache: 'no-cache' });
-            
-            if (!response.ok) {
-                console.log('ℹ️ .env 文件不存在，使用默认配置');
-                return false;
-            }
-            
-            const text = await response.text();
-            const lines = text.split('\n');
-            
-            let loadedCount = 0;
-            lines.forEach(line => {
-                line = line.trim();
-                if (line && !line.startsWith('#')) {
-                    const [key, ...valueParts] = line.split('=');
-                    const value = valueParts.join('=').trim().replace(/^["']|["']$/g, '');
-                    
-                    if (key && value) {
-                        this[key.trim()] = value;
-                        loadedCount++;
-                    }
-                }
-            });
-            
-            console.log(`✅ .env 文件已加载 (${loadedCount} 个配置)`);
-            return true;
-            
-        } catch (error) {
-            console.log('ℹ️ 无法加载 .env 文件:', error.message);
-            return false;
-        }
-    },
+    // 检测是否在 /trans 路径下
+    const isUnderTransPath = pathname.startsWith('/trans');
     
-    // ✅ 同步获取API地址（立即可用，不需要等待初始化）
-    getApiUrl() {
-        return this.API_BASE_URL;
-    },
-    
-    getEnv() {
-        return this.APP_ENV;
-    },
-    
-    getVersion() {
-        return this.VERSION;
+    // 本地开发环境
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+        console.log('✅ 检测到本地环境');
+        return {
+            API_BASE_URL: 'http://localhost:5002/api',
+            isProduction: false
+        };
     }
-};
-
-// 自动初始化（异步，但不影响默认值使用）
-(async () => {
-    try {
-        await ENV_CONFIG.init();
-        console.log('🎉 ENV_CONFIG 初始化完成');
-    } catch (error) {
-        console.error('❌ ENV_CONFIG 初始化失败:', error);
+    
+    // IP 地址访问（Docker 直连测试）
+    const ipPattern = /^(\d{1,3}\.){3}\d{1,3}$/;
+    if (ipPattern.test(hostname)) {
+        const port = window.location.port || '5001';
+        const apiPort = '5002';
+        console.log('✅ 检测到 IP 地址访问');
+        return {
+            API_BASE_URL: `http://${hostname}:${apiPort}/api`,
+            isProduction: false
+        };
     }
+    
+    // 域名访问（生产环境）- 使用 nginx 代理
+    console.log('✅ 检测到域名访问（生产环境）');
+    
+    // 如果在 /trans 路径下，API 使用相对路径 /translator-api/api
+    if (isUnderTransPath) {
+        console.log('📍 检测到 /trans 路径，使用 nginx 代理路径');
+        return {
+            API_BASE_URL: '/translator-api/api',
+            BASE_PATH: '/trans',  // 新增：基础路径
+            isProduction: true
+        };
+    }
+    
+    // 默认配置（根路径）
+    return {
+        API_BASE_URL: '/translator-api/api',
+        BASE_PATH: '',
+        isProduction: true
+    };
 })();
+
+// 加载 .env 文件（仅本地开发）
+async function loadEnvFile() {
+    // 只在本地环境加载 .env 文件
+    if (ENV_CONFIG.isProduction) {
+        console.log('⏭️  生产环境，跳过 .env 文件加载');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/.env');
+        if (!response.ok) {
+            console.log('ℹ️  未找到 .env 文件，使用默认配置');
+            return;
+        }
+        
+        const text = await response.text();
+        const lines = text.split('\n');
+        
+        lines.forEach(line => {
+            line = line.trim();
+            if (line && !line.startsWith('#')) {
+                const [key, ...valueParts] = line.split('=');
+                const value = valueParts.join('=').trim();
+                if (key && value) {
+                    window.ENV = window.ENV || {};
+                    window.ENV[key.trim()] = value.replace(/^["']|["']$/g, '');
+                }
+            }
+        });
+        
+        console.log('✅ .env 文件加载成功');
+    } catch (error) {
+        console.log('ℹ️  .env 文件加载失败:', error.message);
+    }
+}
+
+// 页面加载时自动加载环境变量
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', loadEnvFile);
+} else {
+    loadEnvFile();
+}
+
+console.log('📋 当前环境配置:', ENV_CONFIG);

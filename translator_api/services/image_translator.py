@@ -143,35 +143,17 @@ def download_font_file(font_dir="fonts"):
         logger.info("下载字体文件...")
         
         import urllib.request
+        url = "https://github.com/notofonts/noto-cjk/raw/main/Sans/OTF/SimplifiedChinese/NotoSansSC-Regular.otf"
         
-        # 多个备用下载源（按优先级排序）
-        font_urls = [
-            # 1. 使用正确的 GitHub 原始文件路径
-            "https://github.com/googlefonts/noto-cjk/raw/main/Sans/OTF/SimplifiedChinese/NotoSansSC-Regular.otf",
-            # 2. jsDelivr CDN（GitHub 镜像，国内访问更快）
-            "https://cdn.jsdelivr.net/gh/googlefonts/noto-cjk@main/Sans/OTF/SimplifiedChinese/NotoSansSC-Regular.otf",
-            # 3. 使用 TTF 格式作为备用
-            "https://github.com/googlefonts/noto-cjk/raw/main/Sans/SubsetOTF/SC/NotoSansSC-Regular.otf",
-        ]
+        logger.info(f"  从 {url} 下载...")
+        urllib.request.urlretrieve(url, font_path)
         
-        for url in font_urls:
-            try:
-                logger.info(f"  从 {url} 下载...")
-                urllib.request.urlretrieve(url, font_path)
-                
-                if os.path.exists(font_path) and os.path.getsize(font_path) > 100000:  # 至少 100KB
-                    logger.info(f"✓ 字体下载成功: {font_path} ({os.path.getsize(font_path)} bytes)")
-                    return font_path
-                else:
-                    logger.warning(f"⚠️  下载的文件无效，尝试下一个源...")
-                    if os.path.exists(font_path):
-                        os.remove(font_path)
-            except Exception as e:
-                logger.warning(f"⚠️  该源下载失败: {e}, 尝试下一个源...")
-                continue
-        
-        logger.error("❌ 所有字体下载源均失败")
-        return None
+        if os.path.exists(font_path):
+            logger.info(f"✓ 字体下载成功: {font_path}")
+            return font_path
+        else:
+            logger.error("❌ 字体下载失败")
+            return None
             
     except Exception as e:
         logger.error(f"❌ 字体下载失败: {str(e)}")
