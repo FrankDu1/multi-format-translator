@@ -63,6 +63,28 @@
     
     <!-- ❌ 删除这些 meta 标签（已经从 .env 读取了） -->
     <!-- 环境变量注入 - 由服务器或构建工具填充 -->
+    
+    <!-- 🔥 优先设置 base 路径（必须在所有资源加载之前） -->
+    <script>
+        (function() {
+            const pathname = window.location.pathname;
+            // 自动检测基础路径（例如 /trans, /translator 等）
+            const match = pathname.match(/^\/([^\/]+)/);
+            
+            if (match && !pathname.match(/^\/(index\.html|favicon\.ico)/) && !match[1].match(/\.(html|htm|php|jsp)$/i)) {
+                const basePath = '/' + match[1];
+                const baseHref = window.location.origin + basePath + '/';
+                
+                // 立即创建并插入 <base> 标签
+                const baseTag = document.createElement('base');
+                baseTag.href = baseHref;
+                document.head.insertBefore(baseTag, document.head.firstChild);
+                
+                console.log('✅ Base path set:', baseHref);
+            }
+        })();
+    </script>
+    
     <script>
         window.ENV = {
             API_BASE_URL: (function() {
