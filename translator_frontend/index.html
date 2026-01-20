@@ -518,50 +518,7 @@
     <!-- 🔥 删除或注释掉这一行，因为函数已经在下面定义了 -->
     <!-- <script src="/static/js/tabs.js?v=20251022001"></script> -->
     
-    <!-- ✅ 新增：在加载其他JS之前定义 ENV_CONFIG -->
-    <script>
-        window.ENV_CONFIG = {
-            API_BASE_URL: (() => {
-                const hostname = window.location.hostname;
-                const protocol = window.location.protocol;
-                const port = window.location.port;
-                
-                // 本地开发环境
-                if (hostname === 'localhost' || hostname === '127.0.0.1') {
-                    return 'http://localhost:5002/api';
-                }
-                
-                // 判断是否是 IP 地址（Docker 直连模式）
-                const isIP = /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname);
-                
-                if (isIP) {
-                    // Docker 直连：使用 IP + 5002 端口
-                    return protocol + '//' + hostname + ':5002/api';
-                } else {
-                    // 生产环境（域名 + nginx）：使用相对路径
-                    return '/translator-api/api';
-                }
-            })(),
-            
-            APP_ENV: window.location.hostname === 'localhost' ? 'development' : 'production',
-            VERSION: '3.0.0',
-            APP_NAME: 'Image Translator',
-            
-            getApiUrl() {
-                return this.API_BASE_URL;
-            },
-            
-            getEnv() {
-                return this.APP_ENV;
-            },
-            
-            getVersion() {
-                return this.VERSION;
-            }
-        };
-        
-        console.log('✅ ENV_CONFIG 已定义:', window.ENV_CONFIG.API_BASE_URL);
-    </script>
+    <!-- ENV_CONFIG 由 env-config.js 提供，此处无需重复定义 -->
 
     <script src="/static/js/env-config.js?v=20251016"></script>
     <script src="/static/js/i18n.js?v=20251224001"></script>

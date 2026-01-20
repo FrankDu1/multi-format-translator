@@ -71,7 +71,7 @@ const ENV_CONFIG = (() => {
         // 有基础路径（如 /trans）→ 使用 nginx 代理
         console.log('🔄 使用 nginx 反向代理路径');
         return {
-            API_BASE_URL: '/translator-api/api',
+            API_BASE_URL: '/translator-api',  // ✅ 修复：移除 /api，让app.js自己拼接
             BASE_PATH: detectedBasePath,
             isProduction: true
         };
@@ -79,7 +79,7 @@ const ENV_CONFIG = (() => {
         // 根路径 → 直接访问
         console.log('🔄 根路径直接访问');
         return {
-            API_BASE_URL: '/api',
+            API_BASE_URL: '',  // ✅ 修复：根路径为空，让app.js拼接完整路径
             BASE_PATH: '',
             isProduction: true
         };
@@ -116,6 +116,10 @@ function setBasePath() {
  * 获取 API 完整 URL
  */
 ENV_CONFIG.getApiUrl = function(endpoint) {
+    // 如果没有传入 endpoint，直接返回 API_BASE_URL
+    if (!endpoint) {
+        return this.API_BASE_URL;
+    }
     const cleanEndpoint = endpoint.replace(/^\//, '');
     return `${this.API_BASE_URL}/${cleanEndpoint}`;
 };
@@ -160,50 +164,15 @@ ENV_CONFIG.debug = function() {
     console.groupEnd();
 };
 
-/**
- * 加载 .env 文件（仅本地开发）
- */
-async function loadEnvFile() {
-    if (ENV_CONFIG.isProduction) {
-        console.log('⏭️  生产环境，跳过 .env 文件');
-        return;
-    }
-    
-    try {
-        const response = await fetch('/.env');
-        if (!response.ok) {
-            console.log('ℹ️  未找到 .env 文件');
-            return;
-        }
-        
-        const text = await response.text();
-        const lines = text.split('\n');
-        
-        lines.forEach(line => {
-            line = line.trim();
-            if (line && !line.startsWith('#')) {
-                const [key, ...valueParts] = line.split('=');
-                const value = valueParts.join('=').trim();
-                if (key && value) {
-                    window.ENV = window.ENV || {};
-                    window.ENV[key.trim()] = value.replace(/^["']|["']$/g, '');
-                }
-            }
-        });
-        
-        console.log('✅ .env 文件加载成功');
-    } catch (error) {
-        console.log('ℹ️  .env 加载失败:', error.message);
-    }
+// 初始化时自动执行
+if (typeof document !== 'undefined') {
+    // 调试输出
+    ENV_CONFIG.debug();
+    // 设置base路径
+    setBasePath();
 }
 
-// 初始化
-setBasePath();
-
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', loadEnvFile);
-} else {
-    loadEnvFile();
+// 导出全局变量
+if (typeof window !== 'undefined') {
+    window.ENV_CONFIG = ENV_CONFIG;
 }
-
-console.log('📋 环境配置:', ENV_CONFIG);
