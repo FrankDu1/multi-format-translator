@@ -71,7 +71,7 @@ const ENV_CONFIG = (() => {
         // 有基础路径（如 /trans）→ 使用 nginx 代理
         console.log('🔄 使用 nginx 反向代理路径');
         return {
-            API_BASE_URL: '/translator-api',  // ✅ 修复：移除 /api，让app.js自己拼接
+            API_BASE_URL: '/translator-api/api',  // ✅ 完整路径，包含 /api
             BASE_PATH: detectedBasePath,
             isProduction: true
         };
@@ -79,7 +79,7 @@ const ENV_CONFIG = (() => {
         // 根路径 → 直接访问
         console.log('🔄 根路径直接访问');
         return {
-            API_BASE_URL: '',  // ✅ 修复：根路径为空，让app.js拼接完整路径
+            API_BASE_URL: '/translator-api/api',  // ✅ 完整路径，包含 /api
             BASE_PATH: '',
             isProduction: true
         };
