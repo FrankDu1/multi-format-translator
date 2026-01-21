@@ -108,24 +108,24 @@ jobs:
 
       - name: 🔧 创建环境配置
         run: |
-          cp .env.example .env || echo "No .env.example found"
+          cp config/.env.example .env || echo "No .env.example found"
 
       - name: 🚀 启动服务
         run: |
-          docker compose up -d
+          docker compose -f config/docker-compose.yml up -d
           echo "等待服务启动..."
           sleep 60
 
       - name: 🔍 检查容器状态
         run: |
           echo "容器状态："
-          docker compose ps
+          docker compose -f config/docker-compose.yml ps
           
           echo -e "\n前端日志："
-          docker compose logs frontend | tail -n 20
+          docker compose -f config/docker-compose.yml logs frontend | tail -n 20
           
           echo -e "\nAPI日志："
-          docker compose logs api | tail -n 20
+          docker compose -f config/docker-compose.yml logs api | tail -n 20
 
       - name: 🧪 健康检查
         run: |
@@ -140,10 +140,10 @@ jobs:
           done
           
           echo "检查前端服务..."
-          curl -f http://localhost:5001 || (echo "前端服务检查失败" && docker compose logs frontend && exit 1)
+          curl -f http://localhost:5001 || (echo "前端服务检查失败" && docker compose -f config/docker-compose.yml logs frontend && exit 1)
           
           echo "检查API服务..."
-          curl -f http://localhost:5002/api/health || (echo "API服务检查失败" && docker compose logs api && exit 1)
+          curl -f http://localhost:5002/api/health || (echo "API服务检查失败" && docker compose -f config/docker-compose.yml logs api && exit 1)
           
           # OCR和Inpaint服务是可选的，失败不影响主流程
           echo "检查OCR服务..."
@@ -155,12 +155,12 @@ jobs:
       - name: 📋 查看日志
         if: failure()
         run: |
-          docker compose logs
+          docker compose -f config/docker-compose.yml logs
 
       - name: 🧹 清理
         if: always()
         run: |
-          docker compose down -v
+          docker compose -f config/docker-compose.yml down -v
 
   create-release:
     needs: test-compose
@@ -188,7 +188,7 @@ jobs:
             
             或使用docker compose：
             ```bash
-            docker compose up -d
+            docker compose -f config/docker-compose.yml up -d
             ```
             
             ## 📝 更新日志
