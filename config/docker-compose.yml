@@ -4,7 +4,7 @@ services:
   # OCR服务
   ocr:
     build:
-      context: ./ocr
+      context: ../ocr
       dockerfile: Dockerfile
     container_name: translator-ocr
     ports:
@@ -16,7 +16,7 @@ services:
       - ALLOWED_ORIGINS=*
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
     volumes:
-      - ./logs:/app/logs
+      - ../logs:/app/logs
     restart: unless-stopped
     networks:
       - translator-network
@@ -24,7 +24,7 @@ services:
   # Inpaint服务
   inpaint:
     build:
-      context: ./inpaint
+      context: ../inpaint
       dockerfile: Dockerfile
     container_name: translator-inpaint
     ports:
@@ -36,7 +36,7 @@ services:
       - ALLOWED_ORIGINS=*
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
     volumes:
-      - ./logs:/app/logs
+      - ../logs:/app/logs
     restart: unless-stopped
     networks:
       - translator-network
@@ -44,7 +44,7 @@ services:
   # API服务
   api:
     build:
-      context: ./translator_api
+      context: ../translator_api
       dockerfile: Dockerfile
     container_name: translator-api
     ports:
@@ -69,9 +69,9 @@ services:
       - ALI_ACCESS_KEY_SECRET=${ALI_ACCESS_KEY_SECRET}
       - QWEN_API_KEY=${QWEN_API_KEY}
     volumes:
-      - ./translator_api/uploads:/app/uploads
-      - ./translator_api/archives:/app/archives
-      - ./logs:/app/logs
+      - ../translator_api/uploads:/app/uploads
+      - ../translator_api/archives:/app/archives
+      - ../logs:/app/logs
     depends_on:
       - ocr
       - inpaint
@@ -82,7 +82,7 @@ services:
   # 前端服务
   frontend:
     build:
-      context: ./translator_frontend
+      context: ../translator_frontend
       dockerfile: Dockerfile
     container_name: translator-frontend
     ports:
