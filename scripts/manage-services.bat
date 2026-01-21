@@ -44,8 +44,8 @@ exit /b 1
 
 :python_ok
 REM 🔥 加载环境变量
-if exist .env (
-    for /f "usebackq tokens=1,* delims==" %%a in (".env") do (
+if exist "%SCRIPT_DIR%\..\.env" (
+    for /f "usebackq tokens=1,* delims==" %%a in ("%SCRIPT_DIR%\../.env") do (
         if not "%%a"=="" if not "%%a:~0,1"=="#" set "%%a=%%b"
     )
 )
@@ -115,23 +115,23 @@ echo 正在启动所有服务...
 echo 使用 Python: %PYTHON_EXE%
 echo.
 
-cd /d "%SCRIPT_DIR%"
+cd /d "%SCRIPT_DIR%\.."
 if not exist "logs" mkdir logs
 
 echo [1/4] 启动 OCR 服务 (%OCR_PORT%)...
-start /B "" cmd /c "chcp 65001 >nul && set PYTHONIOENCODING=utf-8 && set NO_PROXY=localhost,127.0.0.1 && set OCR_PORT=%OCR_PORT% && cd /d "%SCRIPT_DIR%\ocr" && "%PYTHON_EXE%" app.py > "%SCRIPT_DIR%\logs\ocr.log" 2>&1"
+start /B "" cmd /c "chcp 65001 >nul && set PYTHONIOENCODING=utf-8 && set NO_PROXY=localhost,127.0.0.1 && set OCR_PORT=%OCR_PORT% && cd /d "%SCRIPT_DIR%\..\ocr" && "%PYTHON_EXE%" app.py > "%SCRIPT_DIR%\..\logs\ocr.log" 2>&1"
 timeout /t 3 >nul
 
 echo [2/4] 启动 Inpaint 服务 (%INPAINT_PORT%)...
-start /B "" cmd /c "chcp 65001 >nul && set PYTHONIOENCODING=utf-8 && set NO_PROXY=localhost,127.0.0.1 && set INPAINT_PORT=%INPAINT_PORT% && cd /d "%SCRIPT_DIR%\inpaint" && "%PYTHON_EXE%" app.py > "%SCRIPT_DIR%\logs\inpaint.log" 2>&1"
+start /B "" cmd /c "chcp 65001 >nul && set PYTHONIOENCODING=utf-8 && set NO_PROXY=localhost,127.0.0.1 && set INPAINT_PORT=%INPAINT_PORT% && cd /d "%SCRIPT_DIR%\..\inpaint" && "%PYTHON_EXE%" app.py > "%SCRIPT_DIR%\..\logs\inpaint.log" 2>&1"
 timeout /t 3 >nul
 
 echo [3/4] 启动 API 服务 (%API_PORT%)...
-start /B "" cmd /c "chcp 65001 >nul && set PYTHONIOENCODING=utf-8 && set NO_PROXY=localhost,127.0.0.1 && set API_PORT=%API_PORT% && cd /d "%SCRIPT_DIR%\translator_api" && "%PYTHON_EXE%" app.py > "%SCRIPT_DIR%\logs\api.log" 2>&1"
+start /B "" cmd /c "chcp 65001 >nul && set PYTHONIOENCODING=utf-8 && set NO_PROXY=localhost,127.0.0.1 && set API_PORT=%API_PORT% && cd /d "%SCRIPT_DIR%\..\translator_api" && "%PYTHON_EXE%" app.py > "%SCRIPT_DIR%\..\logs\api.log" 2>&1"
 timeout /t 3 >nul
 
 echo [4/4] 启动前端服务 (%FRONTEND_PORT%)...
-start /B "" cmd /c "chcp 65001 >nul && set PYTHONIOENCODING=utf-8 && cd /d "%SCRIPT_DIR%\translator_frontend" && "%PYTHON_EXE%" -m http.server %FRONTEND_PORT% > "%SCRIPT_DIR%\logs\frontend.log" 2>&1"
+start /B "" cmd /c "chcp 65001 >nul && set PYTHONIOENCODING=utf-8 && cd /d "%SCRIPT_DIR%\..\translator_frontend" && "%PYTHON_EXE%" -m http.server %FRONTEND_PORT% > "%SCRIPT_DIR%\..\logs\frontend.log" 2>&1"
 
 echo.
 echo ✅ 所有服务启动命令已发送！
@@ -238,7 +238,7 @@ goto menu
 
 :logs
 cls
-cd /d "%SCRIPT_DIR%"
+cd /d "%SCRIPT_DIR%\.."
 echo.
 echo 选择要查看的日志:
 echo   1. OCR服务
@@ -256,7 +256,7 @@ if "%log_choice%"=="1" (
         cls
         echo ========== OCR服务日志 (最后50行) ==========
         echo.
-        powershell -command "Get-Content '%SCRIPT_DIR%\logs\ocr.log' -Tail 50 -Encoding UTF8"
+        powershell -command "Get-Content '%SCRIPT_DIR%\..\logs\ocr.log' -Tail 50 -Encoding UTF8"
         echo.
     ) else (
         echo.
@@ -272,7 +272,7 @@ if "%log_choice%"=="2" (
         cls
         echo ========== Inpaint服务日志 (最后50行) ==========
         echo.
-        powershell -command "Get-Content '%SCRIPT_DIR%\logs\inpaint.log' -Tail 50 -Encoding UTF8"
+        powershell -command "Get-Content '%SCRIPT_DIR%\..\logs\inpaint.log' -Tail 50 -Encoding UTF8"
         echo.
     ) else (
         echo.
@@ -288,7 +288,7 @@ if "%log_choice%"=="3" (
         cls
         echo ========== API服务日志 (最后50行) ==========
         echo.
-        powershell -command "Get-Content '%SCRIPT_DIR%\logs\api.log' -Tail 50 -Encoding UTF8"
+        powershell -command "Get-Content '%SCRIPT_DIR%\..\logs\api.log' -Tail 50 -Encoding UTF8"
         echo.
     ) else (
         echo.
@@ -304,7 +304,7 @@ if "%log_choice%"=="4" (
         cls
         echo ========== 前端服务日志 (最后50行) ==========
         echo.
-        powershell -command "Get-Content '%SCRIPT_DIR%\logs\frontend.log' -Tail 50 -Encoding UTF8"
+        powershell -command "Get-Content '%SCRIPT_DIR%\..\logs\frontend.log' -Tail 50 -Encoding UTF8"
         echo.
     ) else (
         echo.
