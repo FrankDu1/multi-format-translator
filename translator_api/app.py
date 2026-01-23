@@ -343,6 +343,7 @@ def health():
 @app.route('/api/translate/image', methods=['POST'])
 def translate_image():
     """图片翻译接口"""
+    elapsed = 0
     start_time = time.time()
     usage_record = None  # 用于记录使用情况
 

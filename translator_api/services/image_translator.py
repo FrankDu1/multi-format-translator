@@ -28,13 +28,16 @@ try:
     from config import (
         OCR_SERVICE_URL,
         INPAINT_SERVICE_URL,
-        USE_INPAINT
+        USE_INPAINT,
+        CLOUD_OCR,
+        APPCODE
     )
 except ImportError:
     import os
     OCR_SERVICE_URL = os.getenv('OCR_SERVICE_URL', 'http://localhost:8899/ocr')
     INPAINT_SERVICE_URL = os.getenv('INPAINT_SERVICE_URL', 'http://localhost:8900/inpaint')
     USE_INPAINT = True
+    CLOUD_OCR = False
     logger.warning("无法导入配置，使用默认值")
 
 # 导入翻译器
@@ -52,6 +55,56 @@ class OCRResult:
     box: list
     confidence: float = 0.0
 
+
+# ============= ali cloud ocr =============
+def call_aliyun_ocr_http(image_path: str) -> list:
+    """
+    直接用 requests 调用阿里云 OCR HTTP API，返回 OCRResult 列表
+    """
+    # 你的阿里云 OCR API 地址
+    #url = "https://ocr-api.cn-hangzhou.aliyuncs.com/ocr/advanced"
+    
+    url = "https://gjbsb.market.alicloudapi.com/ocrservice/advanced"
+
+    # 你的阿里云鉴权信息
+    appcode = APPCODE  # 推荐用环境变量存储
+    headers = {
+        "Authorization": f"APPCODE {appcode}",
+        "Content-Type": "application/json; charset=UTF-8"
+    }
+    with open(image_path, "rb") as f:
+        img_base64 = base64.b64encode(f.read()).decode("utf-8")
+
+    payload = {
+        "img": img_base64,
+        # "url": "",  # 不用传
+        "prob": False,
+        "charInfo": False,
+        "rotate": False,
+        "table": False,
+        "sortPage": False
+    }
+
+    response = requests.post(
+        url,
+        headers=headers,
+        json=payload,
+        timeout=60
+    )
+
+    if response.status_code != 200:
+        logger.error(f"阿里云OCR请求失败: {response.status_code} {response.text}")
+        return []
+    data = response.json()
+
+    # 解析返回内容
+    results = []
+    for item in data.get("prism_wordsInfo", []):
+        text = item.get("word", "")
+        box = [[p["x"], p["y"]] for p in item.get("pos", [])]
+        if text:
+            results.append(OCRResult(text=text, box=box, confidence=1.0))
+    return results
 
 # ============= 字体管理函数 =============
 
@@ -238,6 +291,11 @@ def call_remote_ocr(
     src_lang: str = None,
     filter_by_lang: bool = True  # 🔥 默认启用过滤
 ) -> List[OCRResult]:
+    """根据配置选择 OCR 服务"""
+    if 'CLOUD_OCR' in globals() and CLOUD_OCR:
+        logger.info("使用阿里云 OCR 服务")
+        return call_aliyun_ocr_http(image_path)
+    
     """调用远程 OCR 服务"""
     if ocr_url is None:
         ocr_url = OCR_SERVICE_URL
@@ -433,6 +491,7 @@ def call_inpaint_with_translation(
             # 构建 texts 数据（按照服务器要求的格式）
             texts.append({
                 'text': trans_text,  # 翻译后的文字
+                'box': formatted_box,  # 🔥 添加box位置信息
                 'color': [0, 0, 0],  # 黑色文字
                 'align': 'center'    # 居中对齐
             })
@@ -609,6 +668,9 @@ def translate_image_with_ocr_and_nllb_detailed(
         logger.info("=" * 60)
         
         # 🔥 步骤1: OCR识别（确保传递参数）
+
+        
+        logger.info(f"CLOUD_OCR = {CLOUD_OCR}")
         logger.info("[1/3] 🖼️  OCR 识别中...")
         ocr_results = call_remote_ocr(
             image_path, 

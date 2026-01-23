@@ -99,3 +99,7 @@ OPENAI_TEMPERATURE = float(os.getenv('OPENAI_TEMPERATURE', '0.7'))
 
 # 通用配置
 SUMMARY_MAX_WORDS = int(os.getenv('SUMMARY_MAX_WORDS', '200'))  # 总结最大字数
+
+# Ali Cloud OCR
+CLOUD_OCR = os.getenv('CLOUD_OCR', 'false').lower() == 'true'
+APPCODE = os.getenv('APPCODE', '')

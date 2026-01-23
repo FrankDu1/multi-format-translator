@@ -63,12 +63,15 @@ class Config:
     
     # 图片处理配置
     MAX_IMAGE_SIZE = int(os.getenv('MAX_IMAGE_SIZE', 10 * 1024 * 1024))  # 10MB
-    INPAINT_RADIUS = int(os.getenv('INPAINT_RADIUS', 3))
+    INPAINT_RADIUS = int(os.getenv('INPAINT_RADIUS', 7))
     OUTPUT_QUALITY = int(os.getenv('OUTPUT_QUALITY', 95))
     
     # Inpaint 方法: TELEA (快) 或 NS (质量好)
     INPAINT_METHOD_NAME = os.getenv('INPAINT_METHOD', 'TELEA')
     INPAINT_METHOD = cv2.INPAINT_TELEA if INPAINT_METHOD_NAME == 'TELEA' else cv2.INPAINT_NS
+    
+    # 🔥 Mask扩展边距（像素）- 确保完全覆盖文字
+    MASK_PADDING = int(os.getenv('MASK_PADDING', 15))
     
     # 文字渲染配置
     DEFAULT_FONT_PATH = os.getenv('FONT_PATH', '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf')
@@ -255,7 +258,8 @@ def draw_text_on_image(image, texts_data, font_path):
                 continue
             
             color = tuple(item.get('color', config.DEFAULT_TEXT_COLOR))
-            bg_color = item.get('bg_color')
+            # 🔥 默认使用白色背景，确保文字可读
+            bg_color = item.get('bg_color', config.DEFAULT_BG_COLOR)
             align = item.get('align', 'center')
             
             # 计算 box 中心点和尺寸
@@ -293,7 +297,7 @@ def draw_text_on_image(image, texts_data, font_path):
             # 绘制背景（如果指定）
             if bg_color:
                 bg_color = tuple(bg_color)
-                padding = 2
+                padding = 5  # 🔥 增大背景边距
                 draw.rectangle(
                     [(x - padding, y - padding),
                      (x + text_width + padding, y + text_height + padding)],
@@ -318,15 +322,25 @@ def draw_text_on_image(image, texts_data, font_path):
 
 
 # ==================== 原有的辅助函数 ====================
-def normalize_boxes(boxes):
+def normalize_boxes(boxes, image_shape=None):
     """
     标准化 boxes 格式，支持两种输入格式：
     1. 嵌套列表: [[[x1,y1], [x2,y2], [x3,y3], [x4,y4]], ...]
     2. 扁平列表: [[x1,y1,x2,y2,x3,y3,x4,y4], ...]
     
+    Args:
+        boxes: 原始boxes列表
+        image_shape: 图片形状 (height, width, channels)，用于裁剪坐标
+    
     返回: numpy array 格式的坐标点列表
     """
     normalized_boxes = []
+    
+    # 获取图片尺寸（如果提供）
+    max_x = None
+    max_y = None
+    if image_shape is not None:
+        max_y, max_x = image_shape[:2]
     
     for i, box in enumerate(boxes):
         if not box:
@@ -336,16 +350,24 @@ def normalize_boxes(boxes):
         try:
             # 检查是嵌套列表还是扁平列表
             if isinstance(box[0], (list, tuple)):
-                points = np.array(box, dtype=np.int32)
+                points = np.array(box, dtype=np.float32)
             else:
                 if len(box) != 8:
                     logger.warning(f"Box {i} 格式错误: 长度 {len(box)}, 期望 8")
                     continue
-                points = np.array(box, dtype=np.int32).reshape(-1, 2)
+                points = np.array(box, dtype=np.float32).reshape(-1, 2)
             
             if len(points) != 4:
                 logger.warning(f"Box {i} 点数错误: {len(points)}, 期望 4")
                 continue
+            
+            # 🔥 裁剪坐标到图片范围内
+            if max_x is not None and max_y is not None:
+                points[:, 0] = np.clip(points[:, 0], 0, max_x - 1)
+                points[:, 1] = np.clip(points[:, 1], 0, max_y - 1)
+            
+            # 转换为整数
+            points = points.astype(np.int32)
             
             normalized_boxes.append(points)
             logger.debug(f"Box {i}: {points.tolist()}")
@@ -358,22 +380,46 @@ def normalize_boxes(boxes):
     return normalized_boxes
 
 
-def create_mask_from_boxes(image_shape, boxes):
+def create_mask_from_boxes(image_shape, boxes, padding=5):
     """
     根据 boxes 创建 mask
     
     Args:
         image_shape: 图片形状 (height, width, channels)
         boxes: 标准化后的 boxes 列表
+        padding: 扩展边距（像素），用于确保完全覆盖文字
     
     Returns:
         mask: numpy array, 255 表示需要修复的区域
     """
     mask = np.zeros(image_shape[:2], dtype=np.uint8)
+    height, width = image_shape[:2]
     
     for points in boxes:
-        # 在 mask 上绘制文字区域（填充为白色）
-        cv2.fillPoly(mask, [points], 255)
+        # 🔥 扩大box范围，确保完全覆盖文字
+        expanded_points = points.copy()
+        
+        # 计算中心点
+        center_x = np.mean(points[:, 0])
+        center_y = np.mean(points[:, 1])
+        
+        # 向外扩展每个点
+        for i in range(len(expanded_points)):
+            dx = expanded_points[i][0] - center_x
+            dy = expanded_points[i][1] - center_y
+            
+            # 计算扩展方向
+            length = np.sqrt(dx*dx + dy*dy)
+            if length > 0:
+                dx = dx / length * padding
+                dy = dy / length * padding
+                
+                # 应用扩展并限制在图片范围内
+                expanded_points[i][0] = int(np.clip(expanded_points[i][0] + dx, 0, width - 1))
+                expanded_points[i][1] = int(np.clip(expanded_points[i][1] + dy, 0, height - 1))
+        
+        # 在 mask 上绘制扩展后的区域
+        cv2.fillPoly(mask, [expanded_points], 255)
     
     return mask
 
@@ -503,7 +549,7 @@ def inpaint():
         
         # 8. 标准化 boxes
         try:
-            normalized_boxes = normalize_boxes(boxes)
+            normalized_boxes = normalize_boxes(boxes, img_array.shape)
             if not normalized_boxes:
                 logger.warning(f"[{request_id}] 没有有效的 boxes")
                 return jsonify({'error': 'No valid boxes'}), 400
@@ -511,18 +557,26 @@ def inpaint():
             logger.error(f"[{request_id}] Boxes 格式错误: {e}")
             return jsonify({'error': 'Invalid boxes format', 'detail': str(e)}), 400
         
-        # 9. 验证坐标
+        # 9. 验证坐标（这一步现在应该总是通过，因为已经裁剪过了）
         is_valid, error_msg = validate_boxes(normalized_boxes, img_array.shape)
         if not is_valid:
-            return jsonify({'error': 'Invalid coordinates', 'detail': error_msg}), 400
+            logger.warning(f"[{request_id}] 坐标验证失败（不应该发生）: {error_msg}")
+            # 不返回错误，继续处理
         
-        # 10. 创建 mask 并执行 inpainting
-        mask = create_mask_from_boxes(img_array.shape, normalized_boxes)
+        # 10. 先用白色填充所有box区域，再inpaint
+        pil_masked = Image.fromarray(img_array.copy())
+        draw = ImageDraw.Draw(pil_masked)
+        for points in normalized_boxes:
+            draw.polygon([tuple(p) for p in points], fill=(255,255,255))
+        img_array_masked = np.array(pil_masked)
+        
+        
+        # 11. 创建 mask 并执行 inpainting
+        mask = create_mask_from_boxes(img_array.shape, normalized_boxes, padding=config.MASK_PADDING)
         mask_pixels = np.count_nonzero(mask)
-        logger.info(f"[{request_id}] Mask: {mask_pixels} 像素需要修复")
-        
+        logger.info(f"[{request_id}] Mask: {mask_pixels} 像素需要修复 (padding={config.MASK_PADDING})")
         try:
-            img_bgr = cv2.cvtColor(img_array, cv2.COLOR_RGB2BGR)
+            img_bgr = cv2.cvtColor(img_array_masked, cv2.COLOR_RGB2BGR)
             
             logger.debug(f"[{request_id}] 开始 inpaint (方法: {config.INPAINT_METHOD_NAME}, 半径: {config.INPAINT_RADIUS})")
             result_bgr = cv2.inpaint(img_bgr, mask, config.INPAINT_RADIUS, config.INPAINT_METHOD)
@@ -532,26 +586,34 @@ def inpaint():
             
             # 转回 PIL Image
             result_image = Image.fromarray(result_rgb)
+            result_image.save(os.path.join(debug_dir, f'{debug_base}_inpainted.jpg'))
             
         except Exception as e:
             logger.error(f"[{request_id}] Inpainting 失败: {e}", exc_info=True)
             return jsonify({'error': 'Inpainting failed', 'detail': str(e)}), 500
         
-        # 11. 渲染翻译后的文字（如果提供了 texts）
+        # 12. 渲染翻译后的文字（如果提供了 texts）
         if texts_data:
             try:
                 # 将 box 和 text 对应起来
                 combined_texts = []
                 for i, text_item in enumerate(texts_data):
-                    if i < len(boxes):
+                    # 🔥 优先使用 text_item 中的 box（如果有），否则从 boxes 参数中获取
+                    box = text_item.get('box')
+                    if not box and i < len(boxes):
+                        box = boxes[i]
+                    
+                    if box:
                         combined_item = {
-                            'box': boxes[i],
+                            'box': box,
                             'text': text_item.get('text', ''),
                             'color': text_item.get('color', list(config.DEFAULT_TEXT_COLOR)),
                             'bg_color': text_item.get('bg_color'),
                             'align': text_item.get('align', 'center')
                         }
                         combined_texts.append(combined_item)
+                    else:
+                        logger.warning(f"[{request_id}] texts[{i}] 没有 box 信息，跳过")
                 
                 result_image = draw_text_on_image(result_image, combined_texts, FONT_PATH)
                 
@@ -560,7 +622,7 @@ def inpaint():
                 # 渲染失败不影响返回 inpaint 后的图片
                 logger.warning(f"[{request_id}] 继续返回未渲染文字的图片")
         
-        # 12. 返回结果
+        # 13. 返回结果
         output = BytesIO()
         result_image.save(output, format='JPEG', quality=config.OUTPUT_QUALITY)
         output.seek(0)
